@@ -1,0 +1,6 @@
+[submodule "ecomate-fe"]
+	path = ecomate-fe
+	url = git@github.com:maialino123/ecomate-fe.git
+[submodule "ecomate-be"]
+	path = ecomate-be
+	url = git@github.com:maialino123/ecomate-be.git
