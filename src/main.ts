@@ -75,12 +75,24 @@ async function bootstrap() {
   // Graceful shutdown
   app.enableShutdownHooks();
 
-  const port = process.env.PORT || 3000;
+  // Railway provides PORT env variable
+  const port = parseInt(process.env.PORT || '3000', 10);
   const host = process.env.HOST || '0.0.0.0';
 
   await app.listen(port, host);
-  console.log(`🚀 Application is running on: http://${host}:${port}`);
-  console.log(`📚 API Documentation: http://${host}:${port}/api/docs`);
+
+  console.log('='.repeat(50));
+  console.log(`🚀 Application is running`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 URL: http://${host}:${port}`);
+  console.log(`❤️  Health: http://${host}:${port}/health`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`📚 API Docs: http://${host}:${port}/api/docs`);
+  }
+  console.log('='.repeat(50));
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('❌ Failed to start application:', error);
+  process.exit(1);
+});
