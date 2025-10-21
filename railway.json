@@ -30,7 +30,7 @@
       "required": true
     },
     "REDIS_URL": {
-      "description": "Upstash Redis URL",
+      "description": "Redis URL",
       "required": true
     },
     "JWT_SECRET": {
@@ -40,30 +40,6 @@
     "JWT_REFRESH_SECRET": {
       "description": "JWT refresh secret key (min 32 chars)",
       "required": true
-    },
-    "S3_ACCESS_KEY_ID": {
-      "description": "AWS S3 or Cloudflare R2 access key",
-      "required": true
-    },
-    "S3_SECRET_ACCESS_KEY": {
-      "description": "AWS S3 or Cloudflare R2 secret key",
-      "required": true
-    },
-    "S3_BUCKET_NAME": {
-      "description": "S3 bucket name",
-      "required": true
-    },
-    "S3_ENDPOINT": {
-      "description": "Cloudflare R2 or S3 endpoint URL",
-      "required": true
-    },
-    "S3_PUBLIC_URL": {
-      "description": "Public URL for S3/R2 bucket",
-      "required": true
-    },
-    "CORS_ORIGINS": {
-      "description": "Allowed CORS origins (comma-separated)",
-      "default": "https://yourdomain.com"
     }
   }
 }

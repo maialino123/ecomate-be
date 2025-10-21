@@ -13,25 +13,27 @@ export class RedisService implements OnModuleDestroy {
     this.client = new Redis(redisConfig.url, {
       lazyConnect: true,
       maxRetriesPerRequest: 3,
+      enableOfflineQueue: false, // Don't queue commands when offline
       retryStrategy: (times) => {
         if (times > 3) {
-          this.logger.error('Redis connection failed after 3 retries');
-          return null;
+          this.logger.warn('⚠️  Redis connection failed after 3 retries - continuing without Redis');
+          return null; // Stop retrying
         }
         return Math.min(times * 200, 1000);
       },
     });
 
     this.client.on('connect', () => {
-      this.logger.log('Redis connected');
+      this.logger.log('✅ Redis connected successfully');
     });
 
     this.client.on('error', (error) => {
-      this.logger.error('Redis error:', error);
+      this.logger.warn(`⚠️  Redis error (non-fatal): ${error.message}`);
     });
 
+    // Connect asynchronously - don't block app startup
     this.client.connect().catch((error) => {
-      this.logger.error('Failed to connect to Redis:', error);
+      this.logger.warn(`⚠️  Failed to connect to Redis - app will continue without caching: ${error.message}`);
     });
   }
 
