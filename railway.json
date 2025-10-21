@@ -10,7 +10,7 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "npx prisma migrate deploy && node dist/main.js",
+    "startCommand": "node dist/main.js",
     "healthcheckPath": "/ping",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
