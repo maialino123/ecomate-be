@@ -76,13 +76,6 @@ export class EnvService {
     };
   }
 
-  getRateLimitConfig() {
-    return {
-      ttl: this.config.RATE_LIMIT_TTL,
-      max: this.config.RATE_LIMIT_MAX,
-    };
-  }
-
   getCorsOrigins(): string[] {
     return this.config.CORS_ORIGINS.split(',').map((origin) => origin.trim());
   }
