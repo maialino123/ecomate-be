@@ -59,10 +59,15 @@ export class HealthController {
 
   @Public()
   @Get('live')
-  @ApiOperation({ summary: 'Liveness probe' })
+  @ApiOperation({ summary: 'Liveness probe - simple health check without dependencies' })
   @ApiResponse({ status: 200, description: 'Service is alive' })
-  async live() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  live() {
+    // Simple synchronous response - no async, no dependencies
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'ecomate-api'
+    };
   }
 
   @Public()

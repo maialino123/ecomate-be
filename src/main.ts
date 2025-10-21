@@ -72,6 +72,12 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  // Add simple ping endpoint for Railway healthcheck
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.get('/ping', async (request, reply) => {
+    return { status: 'ok', timestamp: Date.now() };
+  });
+
   // Graceful shutdown
   app.enableShutdownHooks();
 
@@ -85,7 +91,9 @@ async function bootstrap() {
   console.log(`🚀 Application is running`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 URL: http://${host}:${port}`);
+  console.log(`🏓 Ping (Railway): http://${host}:${port}/ping`);
   console.log(`❤️  Health: http://${host}:${port}/health`);
+  console.log(`✅ Live: http://${host}:${port}/health/live`);
   if (process.env.NODE_ENV !== 'production') {
     console.log(`📚 API Docs: http://${host}:${port}/api/docs`);
   }
