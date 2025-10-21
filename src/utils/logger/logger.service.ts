@@ -28,24 +28,35 @@ export class LoggerService implements NestLoggerService {
       formats.push(winston.format.json());
     }
 
+    // In production (Railway/Docker), only use console logging
+    // The platform (Railway) captures stdout/stderr to centralized logging
+    // File logging in containers causes permission issues with non-root user
+    const transports: winston.transport[] = [
+      new winston.transports.Console(),
+    ];
+
+    // Only add file logging in development (optional, requires logs/ directory)
+    if (!this.envService.isProduction()) {
+      try {
+        transports.push(
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+          }),
+          new winston.transports.File({
+            filename: 'logs/combined.log',
+          }),
+        );
+      } catch (error) {
+        // Fallback to console-only if file creation fails
+        console.warn('⚠️  Could not create log files, using console-only logging');
+      }
+    }
+
     this.logger = winston.createLogger({
       level: logLevel,
       format: winston.format.combine(...formats),
-      transports: [
-        new winston.transports.Console(),
-        // Add file transport in production
-        ...(this.envService.isProduction()
-          ? [
-              new winston.transports.File({
-                filename: 'logs/error.log',
-                level: 'error',
-              }),
-              new winston.transports.File({
-                filename: 'logs/combined.log',
-              }),
-            ]
-          : []),
-      ],
+      transports,
     });
   }
 
