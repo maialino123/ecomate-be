@@ -10,9 +10,9 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "npx prisma migrate deploy && npm run start:prod",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 30,
+    "startCommand": "npx prisma migrate deploy && node dist/main.js",
+    "healthcheckPath": "/health/live",
+    "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   },
@@ -52,6 +52,18 @@
     "S3_BUCKET_NAME": {
       "description": "S3 bucket name",
       "required": true
+    },
+    "S3_ENDPOINT": {
+      "description": "Cloudflare R2 or S3 endpoint URL",
+      "required": true
+    },
+    "S3_PUBLIC_URL": {
+      "description": "Public URL for S3/R2 bucket",
+      "required": true
+    },
+    "CORS_ORIGINS": {
+      "description": "Allowed CORS origins (comma-separated)",
+      "default": "https://yourdomain.com"
     }
   }
 }
