@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Version, VERSION_NEUTRAL } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   HealthCheckService,
@@ -10,7 +10,7 @@ import { PrismaService } from '@db/prisma.service';
 import { RedisService } from '@utils/redis/redis.service';
 
 @ApiTags('health')
-@Controller('health')
+@Controller({ path: 'health', version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(
     private health: HealthCheckService,
