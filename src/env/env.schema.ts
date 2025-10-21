@@ -19,13 +19,13 @@ export const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32).default('your-refresh-secret-at-least-32-chars-long'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
 
-  // Cloudflare R2 (S3-compatible)
-  S3_ENDPOINT: z.string().url(),
+  // Cloudflare R2 (S3-compatible) - Optional in case not configured yet
+  S3_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default('auto'),
-  S3_ACCESS_KEY_ID: z.string(),
-  S3_SECRET_ACCESS_KEY: z.string(),
-  S3_BUCKET_NAME: z.string(),
-  S3_PUBLIC_URL: z.string().url(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_BUCKET_NAME: z.string().optional(),
+  S3_PUBLIC_URL: z.string().url().optional(),
 
   // CORS
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),

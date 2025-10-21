@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Version, VERSION_NEUTRAL } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   HealthCheckService,
@@ -10,7 +10,7 @@ import { PrismaService } from '@db/prisma.service';
 import { RedisService } from '@utils/redis/redis.service';
 
 @ApiTags('health')
-@Controller('health')
+@Controller({ path: 'health', version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(
     private health: HealthCheckService,
@@ -59,10 +59,15 @@ export class HealthController {
 
   @Public()
   @Get('live')
-  @ApiOperation({ summary: 'Liveness probe' })
+  @ApiOperation({ summary: 'Liveness probe - simple health check without dependencies' })
   @ApiResponse({ status: 200, description: 'Service is alive' })
-  async live() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  live() {
+    // Simple synchronous response - no async, no dependencies
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'ecomate-api'
+    };
   }
 
   @Public()

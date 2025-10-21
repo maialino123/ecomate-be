@@ -10,6 +10,13 @@ import cors from '@fastify/cors';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  console.log('🔄 Starting application...');
+  console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔌 PORT:', process.env.PORT || '3000');
+  console.log('💾 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing');
+  console.log('🔴 REDIS_URL:', process.env.REDIS_URL ? '✅ Set' : '❌ Missing');
+  console.log('🔐 JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Missing');
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -17,6 +24,8 @@ async function bootstrap() {
       trustProxy: true,
     }),
   );
+
+  console.log('✅ NestFactory created successfully');
 
   // Security
   await app.register(helmet as any, {
@@ -72,15 +81,35 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  // Add simple ping endpoint for Railway healthcheck
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.get('/ping', async (request, reply) => {
+    return { status: 'ok', timestamp: Date.now() };
+  });
+
   // Graceful shutdown
   app.enableShutdownHooks();
 
-  const port = process.env.PORT || 3000;
+  // Railway provides PORT env variable
+  const port = parseInt(process.env.PORT || '3000', 10);
   const host = process.env.HOST || '0.0.0.0';
 
   await app.listen(port, host);
-  console.log(`🚀 Application is running on: http://${host}:${port}`);
-  console.log(`📚 API Documentation: http://${host}:${port}/api/docs`);
+
+  console.log('='.repeat(50));
+  console.log(`🚀 Application is running`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 URL: http://${host}:${port}`);
+  console.log(`🏓 Ping (Railway): http://${host}:${port}/ping`);
+  console.log(`❤️  Health: http://${host}:${port}/health`);
+  console.log(`✅ Live: http://${host}:${port}/health/live`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`📚 API Docs: http://${host}:${port}/api/docs`);
+  }
+  console.log('='.repeat(50));
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('❌ Failed to start application:', error);
+  process.exit(1);
+});
