@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String?   @unique
+  password        String
+  firstName       String?
+  lastName        String?
+  avatar          String?
+  role            UserRole  @default(USER)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+
+  refreshTokens   RefreshToken[]
+  sessions        Session[]
+  products        Product[]
+  suppliers       Supplier[]
+  costCalculations CostCalculation[]
+  settings        UserSettings?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String   @unique
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// Product Management
+model Product {
+  id              String    @id @default(cuid())
+  sku             String    @unique
+  name            String
+  description     String?
+  category        String?
+  brand           String?
+
+  // Pricing
+  basePrice       Decimal   @db.Decimal(10, 2)
+  sellingPrice    Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD")
+
+  // Inventory
+  stock           Int       @default(0)
+  minStock        Int       @default(10)
+  unit            String    @default("pcs")
+
+  // Images
+  mainImage       String?
+  images          Json?     // Array of image URLs
+
+  // Status
+  status          ProductStatus @default(DRAFT)
+  isActive        Boolean   @default(true)
+
+  // Relations
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  productSuppliers ProductSupplier[]
+  costCalculations CostCalculation[]
+  priceHistory    PriceHistory[]
+
+  // Metadata
+  metadata        Json?
+  tags            String[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([sku])
+  @@index([name])
+  @@index([supplierId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+// Supplier Management
+model Supplier {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  name            String
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  country         String?
+  website         String?
+
+  // Rating
+  rating          Float?    @db.Real
+
+  // Status
+  status          SupplierStatus @default(ACTIVE)
+  isVerified      Boolean   @default(false)
+
+  // 1688 Integration
+  is1688          Boolean   @default(false)
+  storeId1688     String?
+  storeUrl1688    String?
+
+  // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  products        Product[]
+  productSuppliers ProductSupplier[]
+
+  // Metadata
+  metadata        Json?
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([code])
+  @@index([name])
+  @@index([userId])
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+// Many-to-many relation for Product-Supplier
+model ProductSupplier {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId      String
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  supplierSku     String?
+  supplierPrice   Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD")
+  moq             Int       @default(1) // Minimum Order Quantity
+  leadTime        Int?      // in days
+
+  isPreferred     Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([productId, supplierId])
+  @@index([productId])
+  @@index([supplierId])
+}
+
+// Cost Calculation
+model CostCalculation {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  // Base costs
+  productCost     Decimal   @db.Decimal(10, 2)
+  shippingCost    Decimal   @db.Decimal(10, 2)
+  customsCost     Decimal   @db.Decimal(10, 2)
+  packagingCost   Decimal   @db.Decimal(10, 2)
+
+  // Additional costs
+  otherCosts      Json?     // Array of {name: string, amount: number}
+
+  // Totals
+  totalCost       Decimal   @db.Decimal(10, 2)
+  suggestedPrice  Decimal   @db.Decimal(10, 2)
+  profitMargin    Decimal   @db.Decimal(5, 2) // Percentage
+
+  // Metadata
+  currency        String    @default("USD")
+  exchangeRate    Decimal?  @db.Decimal(10, 6)
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+}
+
+// Price History
+model PriceHistory {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  oldPrice        Decimal   @db.Decimal(10, 2)
+  newPrice        Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD")
+  reason          String?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// Settings
+model SystemSettings {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  value           Json
+  description     String?
+  isPublic        Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([key])
+}
+
+model UserSettings {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Preferences
+  language        String    @default("en")
+  timezone        String    @default("UTC")
+  currency        String    @default("USD")
+  dateFormat      String    @default("MM/DD/YYYY")
+
+  // Notifications
+  emailNotifications    Boolean @default(true)
+  pushNotifications     Boolean @default(false)
+
+  // Business settings
+  defaultMarkup         Decimal? @db.Decimal(5, 2)
+  defaultShippingCost   Decimal? @db.Decimal(10, 2)
+
+  // Metadata
+  metadata        Json?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// 1688 Integration
+model Ingest1688Product {
+  id              String    @id @default(cuid())
+  productId       String    @unique
+  productUrl      String
+  title           String
+  titleCn         String?
+
+  // Pricing
+  priceRange      Json      // {min: number, max: number}
+  moq             Int
+
+  // Images
+  mainImage       String
+  images          Json      // Array of URLs
+
+  // Seller info
+  sellerId        String
+  sellerName      String
+  sellerUrl       String
+
+  // Product details
+  specifications  Json?
+  categories      String[]
+
+  // Import status
+  isImported      Boolean   @default(false)
+  importedProductId String?
+
+  // Metadata
+  rawData         Json
+  lastSyncedAt    DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([sellerId])
+  @@index([isImported])
+}
