@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { APP_GUARD } from '@nestjs/core';
 
 @Module({
@@ -18,7 +19,11 @@ import { APP_GUARD } from '@nestjs/core';
     JwtStrategy,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard, // Apply JWT guard globally
+      useClass: JwtAuthGuard, // Apply JWT guard globally (checks authentication)
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // Apply Roles guard globally (checks authorization)
     },
   ],
   exports: [AuthService],

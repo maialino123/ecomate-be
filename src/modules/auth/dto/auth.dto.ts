@@ -81,3 +81,58 @@ export class AuthResponseDto {
     role: string;
   };
 }
+
+// New DTOs for IAM system
+export class RegisterDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'Password123!', minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
+  @ApiProperty({ example: 'johndoe', required: false })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  username?: string;
+
+  @ApiProperty({ example: 'John', required: false })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiProperty({ example: 'Doe', required: false })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+}
+
+export class RegisterResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  email!: string;
+}
+
+export class MagicLinkResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  require2FA!: boolean;
+}
+
+export class ApprovalResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  userEmail?: string;
+
+  @ApiProperty()
+  role?: string;
+}
