@@ -16,12 +16,37 @@ export class EmailService {
   private readonly resend: Resend;
   private readonly fromEmail: string;
   private readonly frontendUrl: string;
+  private readonly allowedOrigins: string[];
 
   constructor(private readonly envService: EnvService) {
     const apiKey = this.envService.get('RESEND_API_KEY');
     this.resend = new Resend(apiKey);
     this.fromEmail = this.envService.get('EMAIL_FROM');
     this.frontendUrl = this.envService.get('FRONTEND_URL');
+    this.allowedOrigins = this.envService.getCorsOrigins();
+  }
+
+  /**
+   * Validate and get origin from request header
+   * Falls back to FRONTEND_URL if origin is not in CORS_ORIGINS
+   */
+  private validateAndGetOrigin(origin?: string): string {
+    if (!origin) {
+      return this.frontendUrl;
+    }
+
+    // Check if origin is in allowed CORS origins
+    const isAllowed = this.allowedOrigins.some(
+      (allowedOrigin) => allowedOrigin === origin || origin.startsWith(allowedOrigin),
+    );
+
+    if (isAllowed) {
+      this.logger.debug(`Using origin from request: ${origin}`);
+      return origin;
+    }
+
+    this.logger.warn(`Origin ${origin} not in CORS_ORIGINS, falling back to FRONTEND_URL`);
+    return this.frontendUrl;
   }
 
   /**
@@ -32,8 +57,9 @@ export class EmailService {
     userEmail: string;
     userName: string;
     approvalToken: string;
+    origin?: string;
   }): Promise<void> {
-    const baseUrl = this.frontendUrl;
+    const baseUrl = this.validateAndGetOrigin(params.origin);
 
     const emailData: ApprovalEmailData = {
       userEmail: params.userEmail,
@@ -42,10 +68,10 @@ export class EmailService {
         dateStyle: 'medium',
         timeStyle: 'short',
       }),
-      approveAdminUrl: `${baseUrl}/api/v1/auth/approval/accept?token=${params.approvalToken}&role=ADMIN`,
-      approveStaffUrl: `${baseUrl}/api/v1/auth/approval/accept?token=${params.approvalToken}&role=STAFF`,
-      approveViewerUrl: `${baseUrl}/api/v1/auth/approval/accept?token=${params.approvalToken}&role=VIEWER`,
-      rejectUrl: `${baseUrl}/api/v1/auth/approval/reject?token=${params.approvalToken}`,
+      approveAdminUrl: `${baseUrl}/approval/accept?token=${params.approvalToken}&role=ADMIN`,
+      approveStaffUrl: `${baseUrl}/approval/accept?token=${params.approvalToken}&role=STAFF`,
+      approveViewerUrl: `${baseUrl}/approval/accept?token=${params.approvalToken}&role=VIEWER`,
+      rejectUrl: `${baseUrl}/approval/reject?token=${params.approvalToken}`,
     };
 
     try {
@@ -73,8 +99,9 @@ export class EmailService {
     token: string;
     ipAddress?: string;
     userAgent?: string;
+    origin?: string;
   }): Promise<void> {
-    const baseUrl = this.frontendUrl;
+    const baseUrl = this.validateAndGetOrigin(params.origin);
 
     const emailData: MagicLinkEmailData = {
       verifyUrl: `${baseUrl}/verify-login?token=${params.token}`,
