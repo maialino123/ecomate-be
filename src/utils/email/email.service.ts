@@ -77,7 +77,7 @@ export class EmailService {
     const baseUrl = this.frontendUrl;
 
     const emailData: MagicLinkEmailData = {
-      verifyUrl: `${baseUrl}/verify-login?token=${params.token}`,
+      verifyUrl: `${baseUrl}/api/v1/auth/verify-login?token=${params.token}`,
       ipAddress: params.ipAddress,
       userAgent: params.userAgent,
     };
