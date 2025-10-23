@@ -82,7 +82,7 @@ export class AuthService {
   /**
    * NEW IAM: Register new user - creates pending request and sends approval email to owner
    */
-  async register(dto: RegisterDto): Promise<RegisterResponseDto> {
+  async register(dto: RegisterDto, origin?: string): Promise<RegisterResponseDto> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -152,6 +152,7 @@ export class AuthService {
       userEmail: dto.email,
       userName,
       approvalToken,
+      origin,
     });
 
     this.logger.log(`Registration request created for ${dto.email}, approval email sent to owner`);
@@ -169,6 +170,7 @@ export class AuthService {
     dto: SignInDto,
     ipAddress?: string,
     userAgent?: string,
+    origin?: string,
   ): Promise<AuthResponseDto | MagicLinkResponseDto> {
     // Find user
     const user = await this.prisma.user.findUnique({
@@ -228,6 +230,7 @@ export class AuthService {
         token: magicToken,
         ipAddress,
         userAgent,
+        origin,
       });
 
       return {

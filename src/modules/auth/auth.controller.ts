@@ -53,7 +53,8 @@ export class AuthController {
   ): Promise<AuthResponseDto | MagicLinkResponseDto> {
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'];
-    return this.authService.signIn(dto, ipAddress, userAgent);
+    const origin = req.headers.origin;
+    return this.authService.signIn(dto, ipAddress, userAgent, origin);
   }
 
   @Public()
@@ -61,8 +62,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Register new user (requires owner approval)' })
   @ApiResponse({ status: 201, description: 'Registration request submitted', type: RegisterResponseDto })
   @ApiResponse({ status: 409, description: 'User already exists or request pending' })
-  async register(@Body() dto: RegisterDto): Promise<RegisterResponseDto> {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: FastifyRequest,
+  ): Promise<RegisterResponseDto> {
+    const origin = req.headers.origin;
+    return this.authService.register(dto, origin);
   }
 
   @Public()
