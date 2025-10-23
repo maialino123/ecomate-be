@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EnvModule } from './env/env.module';
 import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { ProductModule } from './modules/product/product.module';
 import { SupplierModule } from './modules/supplier/supplier.module';
 import { CostModule } from './modules/cost/cost.module';
@@ -11,6 +12,7 @@ import { Ingest1688Module } from './modules/ingest1688/ingest1688.module';
 import { LoggerModule } from './utils/logger/logger.module';
 import { RedisModule } from './utils/redis/redis.module';
 import { S3Module } from './utils/s3/s3.module';
+import { EmailModule } from './utils/email/email.module';
 import { JobsModule } from './jobs/jobs.module';
 import { HealthModule } from './health/health.module';
 
@@ -29,6 +31,7 @@ import { HealthModule } from './health/health.module';
 
     // Core modules
     AuthModule,
+    AdminModule,
     ProductModule,
     SupplierModule,
     CostModule,
@@ -39,6 +42,7 @@ import { HealthModule } from './health/health.module';
     LoggerModule,
     RedisModule,
     S3Module,
+    EmailModule,
 
     // Jobs & Tasks
     JobsModule,

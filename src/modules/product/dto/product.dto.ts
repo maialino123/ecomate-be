@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsEnum, IsArray, Min, IsUUID } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { ProductStatus } from '@prisma/client';
+import { ProductStatus } from '@common/enums';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'SKU-001' })

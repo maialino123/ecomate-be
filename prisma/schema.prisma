@@ -12,19 +12,20 @@ datasource db {
 
 // User and Authentication
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  username        String?   @unique
+  id              String      @id @default(cuid())
+  email           String      @unique
+  username        String?     @unique
   password        String
   firstName       String?
   lastName        String?
   avatar          String?
-  role            UserRole  @default(USER)
-  isActive        Boolean   @default(true)
-  emailVerified   Boolean   @default(false)
+  role            UserRole    @default(VIEWER)
+  status          UserStatus  @default(ACTIVE)
+  require2FA      Boolean     @default(false)
 
   refreshTokens   RefreshToken[]
   sessions        Session[]
+  actionTokens    ActionToken[]
   products        Product[]
   suppliers       Supplier[]
   costCalculations CostCalculation[]
@@ -35,12 +36,21 @@ model User {
 
   @@index([email])
   @@index([username])
+  @@index([role])
+  @@index([status])
 }
 
 enum UserRole {
+  OWNER
   ADMIN
-  MANAGER
-  USER
+  STAFF
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
 model RefreshToken {
@@ -67,6 +77,72 @@ model Session {
 
   @@index([token])
   @@index([userId])
+}
+
+model ActionToken {
+  id          String      @id @default(cuid())
+  token       String      @unique
+  type        ActionType
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Metadata for different token types
+  metadata    Json?
+
+  expiresAt   DateTime
+  usedAt      DateTime?
+
+  createdAt   DateTime    @default(now())
+
+  @@index([token])
+  @@index([type])
+  @@index([userId])
+}
+
+enum ActionType {
+  APPROVAL
+  MAGIC_LINK
+  PASSWORD_RESET
+}
+
+model UserRegistrationRequest {
+  id              String              @id @default(cuid())
+  email           String
+  username        String?
+  password        String
+  firstName       String?
+  lastName        String?
+
+  status          RegistrationStatus  @default(PENDING)
+
+  // Approval information
+  approvedBy      String?
+  approvedAt      DateTime?
+  approvedRole    UserRole?
+
+  // Rejection information
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Token reference
+  actionTokenId   String?
+
+  expiresAt       DateTime
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 // Product Management
