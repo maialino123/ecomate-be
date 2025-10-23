@@ -283,30 +283,42 @@ model CostCalculation {
   userId          String
   user            User      @relation(fields: [userId], references: [id])
 
-  // Base costs
-  productCost     Decimal   @db.Decimal(10, 2)
-  shippingCost    Decimal   @db.Decimal(10, 2)
-  customsCost     Decimal   @db.Decimal(10, 2)
-  packagingCost   Decimal   @db.Decimal(10, 2)
+  // Input costs (Chi phí đầu vào)
+  importPrice           Decimal   @db.Decimal(10, 2) // P_nhập: Giá nhập từ 1688/xưởng (CNY)
+  domesticShippingCN    Decimal   @db.Decimal(10, 2) @default(0) // P_shipTQ: Phí ship nội địa TQ (CNY)
+  internationalShippingVN Decimal @db.Decimal(10, 2) @default(0) // P_shipVN: Phí ship quốc tế (VND)
+  handlingFee           Decimal   @db.Decimal(10, 2) @default(0) // P_xử lý: Chi phí xử lý/gom hàng/thuế (VND)
 
-  // Additional costs
-  otherCosts      Json?     // Array of {name: string, amount: number}
+  // Exchange rate and quantity
+  exchangeRateCNY       Decimal   @db.Decimal(10, 6) // T_CNY→VND: Tỷ giá CNY sang VND
+  quantity              Int       @default(1) // SL: Số lượng sản phẩm trong lô
 
-  // Totals
-  totalCost       Decimal   @db.Decimal(10, 2)
-  suggestedPrice  Decimal   @db.Decimal(10, 2)
-  profitMargin    Decimal   @db.Decimal(5, 2) // Percentage
+  // Business parameters (Tham số kinh doanh)
+  returnRate            Decimal   @db.Decimal(5, 4) @default(0) // R: Tỷ lệ hoàn hàng (0.05 = 5%)
+  platformFeeRate       Decimal   @db.Decimal(5, 4) @default(0) // F: Phí sàn TMĐT (0.20 = 20%)
+  profitMarginRate      Decimal   @db.Decimal(5, 4) @default(0) // G: Biên lợi nhuận mong muốn (0.15 = 15%)
+
+  // Calculated results (Kết quả tính toán)
+  baseCost              Decimal   @db.Decimal(10, 2) // C₀: Giá vốn cơ bản/sản phẩm (VND)
+  effectiveCost         Decimal   @db.Decimal(10, 2) // C_eff: Giá vốn hiệu dụng (có tính hoàn hàng) (VND)
+  suggestedSellingPrice Decimal   @db.Decimal(10, 2) // P: Giá bán đề xuất (VND)
+  netProfit             Decimal   @db.Decimal(10, 2) // L: Lợi nhuận ròng/sản phẩm (VND)
+  breakEvenPrice        Decimal   @db.Decimal(10, 2) // P_BE: Giá hòa vốn (VND)
+
+  // Additional costs (for flexibility)
+  otherCosts      Json?     // Array of {name: string, amount: number, currency: string}
 
   // Metadata
-  currency        String    @default("USD")
-  exchangeRate    Decimal?  @db.Decimal(10, 6)
+  currency        String    @default("VND")
   notes           String?
+  calculationData Json?     // Store full calculation breakdown for audit
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([productId])
   @@index([userId])
+  @@index([createdAt])
 }
 
 // Price History
