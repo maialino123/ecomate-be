@@ -24,7 +24,7 @@ import {
 
 @ApiTags('admin')
 @ApiBearerAuth()
-@Controller('v1/admin')
+@Controller('admin')
 @Roles(UserRole.OWNER) // All admin endpoints require OWNER role
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
