@@ -31,6 +31,11 @@ model User {
   costCalculations CostCalculation[]
   settings        UserSettings?
 
+  // 1688 Product relations
+  product1688Created  Product1688[] @relation("Product1688CreatedBy")
+  product1688Reviewed Product1688[] @relation("Product1688ReviewedBy")
+  product1688Rejected Product1688[] @relation("Product1688RejectedBy")
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -187,6 +192,9 @@ model Product {
   descriptionZh   String?   // Original Chinese description
   translatedAt    DateTime? // Last translation timestamp
   translationMeta Json?     // {source: 'zh', target: 'vi', provider: 'cloudflare-ai', model: '...'}
+
+  // 1688 Product relation (reverse)
+  product1688     Product1688?
 
   // Metadata
   metadata        Json?
@@ -423,4 +431,82 @@ model Ingest1688Product {
   @@index([productId])
   @@index([sellerId])
   @@index([isImported])
+}
+
+// 1688 Product Management (Temp storage for review/approval)
+model Product1688 {
+  id              String   @id @default(cuid())
+
+  // Original Chinese data (from 1688 crawl)
+  nameZh          String
+  descriptionZh   String?
+  originalUrl     String   @unique  // For duplicate check
+
+  // Translated data (after employee translates)
+  nameVi          String?
+  descriptionVi   String?
+
+  // Pricing from 1688 (CNY)
+  priceMinCNY     Float
+  priceMaxCNY     Float?
+  currency        String   @default("CNY")
+
+  // Cost calculation (employee fills, JSON format)
+  costCalculation Json?    // {importPrice, shipping, exchangeRate, margin, finalPrice, etc.}
+
+  // Variants/SKUs (array of variant objects)
+  variants        Json?    // [{sku, nameZh, nameVi, attributes, price, stock}]
+  variantCount    Int      @default(0)
+
+  // 1688 Supplier info
+  supplierName    String?
+  supplierId1688  String?  // 1688 supplier ID
+
+  // Images
+  images          String[]
+  thumbnail       String?  // Main image
+
+  // Status workflow
+  status          Product1688Status @default(PENDING_REVIEW)
+
+  // Rejection info (if rejected)
+  rejectionReason RejectionReason?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+
+  // Metadata
+  createdBy       String?  // User ID who saved from extension
+  reviewedBy      String?  // Employee who reviewed/approved
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Link to final Product (after approve & import)
+  productId       String?  @unique
+  product         Product? @relation(fields: [productId], references: [id])
+
+  // User relations
+  createdByUser   User?    @relation("Product1688CreatedBy", fields: [createdBy], references: [id])
+  reviewedByUser  User?    @relation("Product1688ReviewedBy", fields: [reviewedBy], references: [id])
+  rejectedByUser  User?    @relation("Product1688RejectedBy", fields: [rejectedBy], references: [id])
+
+  @@index([originalUrl])
+  @@index([status])
+  @@index([createdAt])
+  @@index([createdBy])
+}
+
+enum Product1688Status {
+  PENDING_REVIEW  // Saved from extension, not translated
+  TRANSLATED      // Translated, awaiting approval
+  APPROVED        // Approved & imported to Product
+  REJECTED        // Rejected by employee
+}
+
+enum RejectionReason {
+  LOW_QUALITY
+  TOO_EXPENSIVE
+  ALREADY_HAVE
+  NOT_SUITABLE
+  SUPPLIER_ISSUES
+  OTHER
 }
