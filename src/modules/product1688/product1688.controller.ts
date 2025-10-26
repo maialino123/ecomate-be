@@ -26,7 +26,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@common/enums';
 
 @ApiTags('1688 Products')
-@Controller('v1/1688-products')
+@Controller('1688-products')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class Product1688Controller {
