@@ -41,8 +41,8 @@ export class TranslationService {
    */
   async translateProduct(
     productId: string,
-    sourceLang = 'chinese',
-    targetLang = 'vietnamese',
+    sourceLang = 'zh',
+    targetLang = 'vi',
     forceRefresh = false,
   ): Promise<ProductTranslationResult> {
     this.logger.log(`Translating product ${productId} from ${sourceLang} to ${targetLang}`);
@@ -59,31 +59,44 @@ export class TranslationService {
     const translations: ProductTranslationResult['translations'] = {};
     let cached = false;
 
+    // FIX: Use preserved original Chinese text as source, fallback to current value
+    const sourceNameText = product.nameZh || product.name;
+    const sourceDescText = product.descriptionZh || product.description;
+
+    // FIX: Only save original Chinese once (when not already saved)
+    const shouldSaveOriginal = !product.nameZh && !product.descriptionZh;
+
+    if (shouldSaveOriginal) {
+      this.logger.debug(`💾 Saving original Chinese for product ${productId}`);
+    } else {
+      this.logger.debug(`♻️  Re-using preserved original for product ${productId}`);
+    }
+
     // Translate product name
-    if (product.name) {
+    if (sourceNameText) {
       const nameTranslation = await this.translateText(
-        product.name,
+        sourceNameText,
         sourceLang,
         targetLang,
         forceRefresh,
       );
       translations.name = {
-        original: product.name,
+        original: sourceNameText,
         translated: nameTranslation.text,
       };
       cached = nameTranslation.cached;
     }
 
     // Translate product description
-    if (product.description) {
+    if (sourceDescText) {
       const descTranslation = await this.translateText(
-        product.description,
+        sourceDescText,
         sourceLang,
         targetLang,
         forceRefresh,
       );
       translations.description = {
-        original: product.description,
+        original: sourceDescText,
         translated: descTranslation.text,
       };
       cached = cached && descTranslation.cached;
@@ -94,8 +107,12 @@ export class TranslationService {
     await this.prisma.product.update({
       where: { id: productId },
       data: {
-        nameZh: product.name, // Store original Chinese name
-        descriptionZh: product.description, // Store original Chinese description
+        // FIX: Only save original Chinese text ONCE (when first translating)
+        ...(shouldSaveOriginal && {
+          nameZh: product.name,
+          descriptionZh: product.description,
+        }),
+        // Always update translated text
         name: translations.name?.translated || product.name,
         description: translations.description?.translated || product.description,
         translatedAt,
@@ -125,8 +142,8 @@ export class TranslationService {
    */
   async batchTranslate(
     productIds: string[],
-    sourceLang = 'chinese',
-    targetLang = 'vietnamese',
+    sourceLang = 'zh',
+    targetLang = 'vi',
     forceRefresh = false,
   ): Promise<BatchTranslationResult> {
     this.logger.log(`Batch translating ${productIds.length} products`);
