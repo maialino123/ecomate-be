@@ -10,6 +10,7 @@ export interface Product1688Variant {
   attributes: Record<string, string>; // e.g., {color: "红色", size: "L"}
   price: number; // Price in CNY
   stock?: number; // Stock quantity
+  image?: string; // SKU variant image URL
 }
 
 /**
