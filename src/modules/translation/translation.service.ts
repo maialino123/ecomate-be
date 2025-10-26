@@ -183,7 +183,7 @@ export class TranslationService {
    * Translate text using Cloudflare Worker AI
    * Implements caching and retry logic
    */
-  private async translateText(
+  async translateText(
     text: string,
     sourceLang: string,
     targetLang: string,

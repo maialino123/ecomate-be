@@ -10,6 +10,7 @@ import { CostModule } from './modules/cost/cost.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { Ingest1688Module } from './modules/ingest1688/ingest1688.module';
 import { TranslationModule } from './modules/translation/translation.module';
+import { Product1688Module } from './modules/product1688/product1688.module';
 import { LoggerModule } from './utils/logger/logger.module';
 import { RedisModule } from './utils/redis/redis.module';
 import { S3Module } from './utils/s3/s3.module';
@@ -39,6 +40,7 @@ import { HealthModule } from './health/health.module';
     SettingsModule,
     Ingest1688Module,
     TranslationModule,
+    Product1688Module,
 
     // Utilities
     LoggerModule,
