@@ -182,6 +182,12 @@ model Product {
   costCalculations CostCalculation[]
   priceHistory    PriceHistory[]
 
+  // Translation fields
+  nameZh          String?   // Original Chinese name
+  descriptionZh   String?   // Original Chinese description
+  translatedAt    DateTime? // Last translation timestamp
+  translationMeta Json?     // {source: 'zh', target: 'vi', provider: 'cloudflare-ai', model: '...'}
+
   // Metadata
   metadata        Json?
   tags            String[]
