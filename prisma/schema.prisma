@@ -12,32 +12,32 @@ datasource db {
 
 // User and Authentication
 model User {
-  id              String      @id @default(cuid())
-  email           String      @unique
-  username        String?     @unique
-  password        String
-  firstName       String?
-  lastName        String?
-  avatar          String?
-  role            UserRole    @default(VIEWER)
-  status          UserStatus  @default(ACTIVE)
-  require2FA      Boolean     @default(false)
+  id         String     @id @default(cuid())
+  email      String     @unique
+  username   String?    @unique
+  password   String
+  firstName  String?
+  lastName   String?
+  avatar     String?
+  role       UserRole   @default(VIEWER)
+  status     UserStatus @default(ACTIVE)
+  require2FA Boolean    @default(false)
 
-  refreshTokens   RefreshToken[]
-  sessions        Session[]
-  actionTokens    ActionToken[]
-  products        Product[]
-  suppliers       Supplier[]
+  refreshTokens    RefreshToken[]
+  sessions         Session[]
+  actionTokens     ActionToken[]
+  products         Product[]
+  suppliers        Supplier[]
   costCalculations CostCalculation[]
-  settings        UserSettings?
+  settings         UserSettings?
 
   // 1688 Product relations
   product1688Created  Product1688[] @relation("Product1688CreatedBy")
   product1688Reviewed Product1688[] @relation("Product1688ReviewedBy")
   product1688Rejected Product1688[] @relation("Product1688RejectedBy")
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([username])
@@ -59,45 +59,45 @@ enum UserStatus {
 }
 
 model RefreshToken {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([token])
   @@index([userId])
 }
 
 model Session {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token       String   @unique
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([token])
   @@index([userId])
 }
 
 model ActionToken {
-  id          String      @id @default(cuid())
-  token       String      @unique
-  type        ActionType
-  userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String     @id @default(cuid())
+  token  String     @unique
+  type   ActionType
+  userId String?
+  user   User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Metadata for different token types
-  metadata    Json?
+  metadata Json?
 
-  expiresAt   DateTime
-  usedAt      DateTime?
+  expiresAt DateTime
+  usedAt    DateTime?
 
-  createdAt   DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   @@index([token])
   @@index([type])
@@ -111,19 +111,19 @@ enum ActionType {
 }
 
 model UserRegistrationRequest {
-  id              String              @id @default(cuid())
-  email           String
-  username        String?
-  password        String
-  firstName       String?
-  lastName        String?
+  id        String  @id @default(cuid())
+  email     String
+  username  String?
+  password  String
+  firstName String?
+  lastName  String?
 
-  status          RegistrationStatus  @default(PENDING)
+  status RegistrationStatus @default(PENDING)
 
   // Approval information
-  approvedBy      String?
-  approvedAt      DateTime?
-  approvedRole    UserRole?
+  approvedBy   String?
+  approvedAt   DateTime?
+  approvedRole UserRole?
 
   // Rejection information
   rejectedBy      String?
@@ -131,12 +131,12 @@ model UserRegistrationRequest {
   rejectionReason String?
 
   // Token reference
-  actionTokenId   String?
+  actionTokenId String?
 
-  expiresAt       DateTime
+  expiresAt DateTime
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([status])
@@ -152,56 +152,56 @@ enum RegistrationStatus {
 
 // Product Management
 model Product {
-  id              String    @id @default(cuid())
-  sku             String    @unique
-  name            String
-  description     String?
-  category        String?
-  brand           String?
+  id          String  @id @default(cuid())
+  sku         String  @unique
+  name        String
+  description String?
+  category    String?
+  brand       String?
 
   // Pricing
-  basePrice       Decimal   @db.Decimal(10, 2)
-  sellingPrice    Decimal   @db.Decimal(10, 2)
-  currency        String    @default("USD")
+  basePrice    Decimal @db.Decimal(10, 2)
+  sellingPrice Decimal @db.Decimal(10, 2)
+  currency     String  @default("USD")
 
   // Inventory
-  stock           Int       @default(0)
-  minStock        Int       @default(10)
-  unit            String    @default("pcs")
+  stock    Int    @default(0)
+  minStock Int    @default(10)
+  unit     String @default("pcs")
 
   // Images
-  mainImage       String?
-  images          Json?     // Array of image URLs
+  mainImage String?
+  images    Json? // Array of image URLs
 
   // Status
-  status          ProductStatus @default(DRAFT)
-  isActive        Boolean   @default(true)
+  status   ProductStatus @default(DRAFT)
+  isActive Boolean       @default(true)
 
   // Relations
-  supplierId      String?
-  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
 
   productSuppliers ProductSupplier[]
   costCalculations CostCalculation[]
-  priceHistory    PriceHistory[]
+  priceHistory     PriceHistory[]
 
   // Translation fields
-  nameZh          String?   // Original Chinese name
-  descriptionZh   String?   // Original Chinese description
+  nameZh          String? // Original Chinese name
+  descriptionZh   String? // Original Chinese description
   translatedAt    DateTime? // Last translation timestamp
-  translationMeta Json?     // {source: 'zh', target: 'vi', provider: 'cloudflare-ai', model: '...'}
+  translationMeta Json? // {source: 'zh', target: 'vi', provider: 'cloudflare-ai', model: '...'}
 
   // 1688 Product relation (reverse)
-  product1688     Product1688?
+  product1688 Product1688?
 
   // Metadata
-  metadata        Json?
-  tags            String[]
+  metadata Json?
+  tags     String[]
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sku])
   @@index([name])
@@ -219,40 +219,40 @@ enum ProductStatus {
 
 // Supplier Management
 model Supplier {
-  id              String    @id @default(cuid())
-  code            String    @unique
-  name            String
-  contactPerson   String?
-  email           String?
-  phone           String?
-  address         String?
-  country         String?
-  website         String?
+  id            String  @id @default(cuid())
+  code          String  @unique
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  country       String?
+  website       String?
 
   // Rating
-  rating          Float?    @db.Real
+  rating Float? @db.Real
 
   // Status
-  status          SupplierStatus @default(ACTIVE)
-  isVerified      Boolean   @default(false)
+  status     SupplierStatus @default(ACTIVE)
+  isVerified Boolean        @default(false)
 
   // 1688 Integration
-  is1688          Boolean   @default(false)
-  storeId1688     String?
-  storeUrl1688    String?
+  is1688       Boolean @default(false)
+  storeId1688  String?
+  storeUrl1688 String?
 
   // Relations
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  products        Product[]
+  userId           String
+  user             User              @relation(fields: [userId], references: [id])
+  products         Product[]
   productSuppliers ProductSupplier[]
 
   // Metadata
-  metadata        Json?
-  notes           String?
+  metadata Json?
+  notes    String?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code])
   @@index([name])
@@ -267,22 +267,22 @@ enum SupplierStatus {
 
 // Many-to-many relation for Product-Supplier
 model ProductSupplier {
-  id              String    @id @default(cuid())
-  productId       String
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  supplierId      String
-  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
-  supplierSku     String?
-  supplierPrice   Decimal   @db.Decimal(10, 2)
-  currency        String    @default("USD")
-  moq             Int       @default(1) // Minimum Order Quantity
-  leadTime        Int?      // in days
+  supplierSku   String?
+  supplierPrice Decimal @db.Decimal(10, 2)
+  currency      String  @default("USD")
+  moq           Int     @default(1) // Minimum Order Quantity
+  leadTime      Int? // in days
 
-  isPreferred     Boolean   @default(false)
+  isPreferred Boolean @default(false)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([productId, supplierId])
   @@index([productId])
@@ -291,44 +291,44 @@ model ProductSupplier {
 
 // Cost Calculation
 model CostCalculation {
-  id              String    @id @default(cuid())
-  productId       String
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
 
   // Input costs (Chi phí đầu vào)
-  importPrice           Decimal   @db.Decimal(10, 2) // P_nhập: Giá nhập từ 1688/xưởng (CNY)
-  domesticShippingCN    Decimal   @db.Decimal(10, 2) @default(0) // P_shipTQ: Phí ship nội địa TQ (CNY)
-  internationalShippingVN Decimal @db.Decimal(10, 2) @default(0) // P_shipVN: Phí ship quốc tế (VND)
-  handlingFee           Decimal   @db.Decimal(10, 2) @default(0) // P_xử lý: Chi phí xử lý/gom hàng/thuế (VND)
+  importPrice             Decimal @db.Decimal(10, 2) // P_nhập: Giá nhập từ 1688/xưởng (CNY)
+  domesticShippingCN      Decimal @default(0) @db.Decimal(10, 2) // P_shipTQ: Phí ship nội địa TQ (CNY)
+  internationalShippingVN Decimal @default(0) @db.Decimal(10, 2) // P_shipVN: Phí ship quốc tế (VND)
+  handlingFee             Decimal @default(0) @db.Decimal(10, 2) // P_xử lý: Chi phí xử lý/gom hàng/thuế (VND)
 
   // Exchange rate and quantity
-  exchangeRateCNY       Decimal   @db.Decimal(10, 6) // T_CNY→VND: Tỷ giá CNY sang VND
-  quantity              Int       @default(1) // SL: Số lượng sản phẩm trong lô
+  exchangeRateCNY Decimal @db.Decimal(10, 6) // T_CNY→VND: Tỷ giá CNY sang VND
+  quantity        Int     @default(1) // SL: Số lượng sản phẩm trong lô
 
   // Business parameters (Tham số kinh doanh)
-  returnRate            Decimal   @db.Decimal(5, 4) @default(0) // R: Tỷ lệ hoàn hàng (0.05 = 5%)
-  platformFeeRate       Decimal   @db.Decimal(5, 4) @default(0) // F: Phí sàn TMĐT (0.20 = 20%)
-  profitMarginRate      Decimal   @db.Decimal(5, 4) @default(0) // G: Biên lợi nhuận mong muốn (0.15 = 15%)
+  returnRate       Decimal @default(0) @db.Decimal(5, 4) // R: Tỷ lệ hoàn hàng (0.05 = 5%)
+  platformFeeRate  Decimal @default(0) @db.Decimal(5, 4) // F: Phí sàn TMĐT (0.20 = 20%)
+  profitMarginRate Decimal @default(0) @db.Decimal(5, 4) // G: Biên lợi nhuận mong muốn (0.15 = 15%)
 
   // Calculated results (Kết quả tính toán)
-  baseCost              Decimal   @db.Decimal(10, 2) // C₀: Giá vốn cơ bản/sản phẩm (VND)
-  effectiveCost         Decimal   @db.Decimal(10, 2) // C_eff: Giá vốn hiệu dụng (có tính hoàn hàng) (VND)
-  suggestedSellingPrice Decimal   @db.Decimal(10, 2) // P: Giá bán đề xuất (VND)
-  netProfit             Decimal   @db.Decimal(10, 2) // L: Lợi nhuận ròng/sản phẩm (VND)
-  breakEvenPrice        Decimal   @db.Decimal(10, 2) // P_BE: Giá hòa vốn (VND)
+  baseCost              Decimal @db.Decimal(10, 2) // C₀: Giá vốn cơ bản/sản phẩm (VND)
+  effectiveCost         Decimal @db.Decimal(10, 2) // C_eff: Giá vốn hiệu dụng (có tính hoàn hàng) (VND)
+  suggestedSellingPrice Decimal @db.Decimal(10, 2) // P: Giá bán đề xuất (VND)
+  netProfit             Decimal @db.Decimal(10, 2) // L: Lợi nhuận ròng/sản phẩm (VND)
+  breakEvenPrice        Decimal @db.Decimal(10, 2) // P_BE: Giá hòa vốn (VND)
 
   // Additional costs (for flexibility)
-  otherCosts      Json?     // Array of {name: string, amount: number, currency: string}
+  otherCosts Json? // Array of {name: string, amount: number, currency: string}
 
   // Metadata
-  currency        String    @default("VND")
+  currency        String  @default("VND")
   notes           String?
-  calculationData Json?     // Store full calculation breakdown for audit
+  calculationData Json? // Store full calculation breakdown for audit
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId])
   @@index([userId])
@@ -337,16 +337,16 @@ model CostCalculation {
 
 // Price History
 model PriceHistory {
-  id              String    @id @default(cuid())
-  productId       String
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  oldPrice        Decimal   @db.Decimal(10, 2)
-  newPrice        Decimal   @db.Decimal(10, 2)
-  currency        String    @default("USD")
-  reason          String?
+  oldPrice Decimal @db.Decimal(10, 2)
+  newPrice Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+  reason   String?
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([productId])
   @@index([createdAt])
@@ -354,79 +354,79 @@ model PriceHistory {
 
 // Settings
 model SystemSettings {
-  id              String    @id @default(cuid())
-  key             String    @unique
-  value           Json
-  description     String?
-  isPublic        Boolean   @default(false)
+  id          String  @id @default(cuid())
+  key         String  @unique
+  value       Json
+  description String?
+  isPublic    Boolean @default(false)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([key])
 }
 
 model UserSettings {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Preferences
-  language        String    @default("en")
-  timezone        String    @default("UTC")
-  currency        String    @default("USD")
-  dateFormat      String    @default("MM/DD/YYYY")
+  language   String @default("en")
+  timezone   String @default("UTC")
+  currency   String @default("USD")
+  dateFormat String @default("MM/DD/YYYY")
 
   // Notifications
-  emailNotifications    Boolean @default(true)
-  pushNotifications     Boolean @default(false)
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(false)
 
   // Business settings
-  defaultMarkup         Decimal? @db.Decimal(5, 2)
-  defaultShippingCost   Decimal? @db.Decimal(10, 2)
+  defaultMarkup       Decimal? @db.Decimal(5, 2)
+  defaultShippingCost Decimal? @db.Decimal(10, 2)
 
   // Metadata
-  metadata        Json?
+  metadata Json?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 1688 Integration
 model Ingest1688Product {
-  id              String    @id @default(cuid())
-  productId       String    @unique
-  productUrl      String
-  title           String
-  titleCn         String?
+  id         String  @id @default(cuid())
+  productId  String  @unique
+  productUrl String
+  title      String
+  titleCn    String?
 
   // Pricing
-  priceRange      Json      // {min: number, max: number}
-  moq             Int
+  priceRange Json // {min: number, max: number}
+  moq        Int
 
   // Images
-  mainImage       String
-  images          Json      // Array of URLs
+  mainImage String
+  images    Json // Array of URLs
 
   // Seller info
-  sellerId        String
-  sellerName      String
-  sellerUrl       String
+  sellerId   String
+  sellerName String
+  sellerUrl  String
 
   // Product details
-  specifications  Json?
-  categories      String[]
+  specifications Json?
+  categories     String[]
 
   // Import status
-  isImported      Boolean   @default(false)
+  isImported        Boolean @default(false)
   importedProductId String?
 
   // Metadata
-  rawData         Json
-  lastSyncedAt    DateTime?
+  rawData      Json
+  lastSyncedAt DateTime?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId])
   @@index([sellerId])
@@ -435,39 +435,40 @@ model Ingest1688Product {
 
 // 1688 Product Management (Temp storage for review/approval)
 model Product1688 {
-  id              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Original Chinese data (from 1688 crawl)
-  nameZh          String
-  descriptionZh   String?
-  originalUrl     String   @unique  // For duplicate check
+  nameZh        String
+  descriptionZh String?
+  originalUrl   String  @unique // For duplicate check
 
   // Translated data (after employee translates)
-  nameVi          String?
-  descriptionVi   String?
+  nameVi        String?
+  descriptionVi String?
 
   // Pricing from 1688 (CNY)
-  priceMinCNY     Float
-  priceMaxCNY     Float?
-  currency        String   @default("CNY")
+  priceMinCNY Float
+  priceMaxCNY Float?
+  currency    String @default("CNY")
 
   // Cost calculation (employee fills, JSON format)
-  costCalculation Json?    // {importPrice, shipping, exchangeRate, margin, finalPrice, etc.}
+  costCalculation Json? // {importPrice, shipping, exchangeRate, margin, finalPrice, etc.}
 
   // Variants/SKUs (array of variant objects)
-  variants        Json?    // [{sku, nameZh, nameVi, attributes, price, stock}]
-  variantCount    Int      @default(0)
+  variants     Json? // [{sku, nameZh, nameVi, attributes, price, stock}]
+  variantCount Int   @default(0)
 
   // 1688 Supplier info
-  supplierName    String?
-  supplierId1688  String?  // 1688 supplier ID
+  supplierName   String?
+  supplierId1688 String? // 1688 supplier ID
 
   // Images
-  images          String[]
-  thumbnail       String?  // Main image
+  images         String[]
+  selectedImages String[] @default([]) // Images selected by staff for product
+  thumbnail      String? // Main image
 
   // Status workflow
-  status          Product1688Status @default(PENDING_REVIEW)
+  status Product1688Status @default(PENDING_REVIEW)
 
   // Rejection info (if rejected)
   rejectionReason RejectionReason?
@@ -475,19 +476,19 @@ model Product1688 {
   rejectedBy      String?
 
   // Metadata
-  createdBy       String?  // User ID who saved from extension
-  reviewedBy      String?  // Employee who reviewed/approved
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdBy  String? // User ID who saved from extension
+  reviewedBy String? // Employee who reviewed/approved
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Link to final Product (after approve & import)
-  productId       String?  @unique
-  product         Product? @relation(fields: [productId], references: [id])
+  productId String?  @unique
+  product   Product? @relation(fields: [productId], references: [id])
 
   // User relations
-  createdByUser   User?    @relation("Product1688CreatedBy", fields: [createdBy], references: [id])
-  reviewedByUser  User?    @relation("Product1688ReviewedBy", fields: [reviewedBy], references: [id])
-  rejectedByUser  User?    @relation("Product1688RejectedBy", fields: [rejectedBy], references: [id])
+  createdByUser  User? @relation("Product1688CreatedBy", fields: [createdBy], references: [id])
+  reviewedByUser User? @relation("Product1688ReviewedBy", fields: [reviewedBy], references: [id])
+  rejectedByUser User? @relation("Product1688RejectedBy", fields: [rejectedBy], references: [id])
 
   @@index([originalUrl])
   @@index([status])
@@ -496,10 +497,10 @@ model Product1688 {
 }
 
 enum Product1688Status {
-  PENDING_REVIEW  // Saved from extension, not translated
-  TRANSLATED      // Translated, awaiting approval
-  APPROVED        // Approved & imported to Product
-  REJECTED        // Rejected by employee
+  PENDING_REVIEW // Saved from extension, not translated
+  TRANSLATED // Translated, awaiting approval
+  APPROVED // Approved & imported to Product
+  REJECTED // Rejected by employee
 }
 
 enum RejectionReason {
