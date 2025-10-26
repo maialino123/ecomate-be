@@ -32,7 +32,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/products')
+@Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

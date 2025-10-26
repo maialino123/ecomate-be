@@ -38,8 +38,11 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1).describe('Resend API key for sending emails'),
   OWNER_EMAIL: z.string().email().describe('Owner email address'),
   EMAIL_FROM: z.string().default('Ecomate <no-reply@ecomatehome.com>'),
-  FRONTEND_URL: z.string().url().default('http://localhost:3001').describe('Frontend URL for redirects'),
-  BACKEND_URL: z.string().url().default('http://localhost:3000').describe('Backend API URL for email callback links'),
+  FRONTEND_URL: z.string().default('http://localhost:3001').describe('Frontend URL for redirects'),
+  BACKEND_URL: z
+    .string()
+    .default('http://localhost:3000')
+    .describe('Backend API URL for email callback links'),
 });
 
 export type Env = z.infer<typeof envSchema>;

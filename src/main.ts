@@ -40,9 +40,16 @@ async function bootstrap() {
   });
 
   // CORS
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',').map(o => o.trim()) || true;
+  console.log('🌐 CORS Origins:', corsOrigins === true ? 'ALL (*)' : corsOrigins);
+
   await app.register(cors as any, {
-    origin: process.env.CORS_ORIGINS?.split(',') || true,
+    origin: corsOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400, // 24 hours
   });
 
   // Global pipes
