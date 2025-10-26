@@ -28,7 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('translation')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/translation')
+@Controller('translation')
 export class TranslationController {
   constructor(private readonly translationService: TranslationService) {}
 
