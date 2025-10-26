@@ -11,6 +11,15 @@ export interface Product1688Variant {
   price: number; // Price in CNY
   stock?: number; // Stock quantity
   image?: string; // SKU variant image URL
+  costCalculation?: {
+    // Latest cost calculation results
+    baseCost: number;
+    effectiveCost: number;
+    suggestedSellingPrice: number;
+    netProfit: number;
+    breakEvenPrice: number;
+    lastCalculatedAt: string;
+  };
 }
 
 /**

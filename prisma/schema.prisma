@@ -36,6 +36,9 @@ model User {
   product1688Reviewed Product1688[] @relation("Product1688ReviewedBy")
   product1688Rejected Product1688[] @relation("Product1688RejectedBy")
 
+  // 1688 Variant Cost History relations
+  variantCostHistory Product1688VariantCostHistory[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -490,6 +493,9 @@ model Product1688 {
   reviewedByUser User? @relation("Product1688ReviewedBy", fields: [reviewedBy], references: [id])
   rejectedByUser User? @relation("Product1688RejectedBy", fields: [rejectedBy], references: [id])
 
+  // Cost calculation history for variants
+  variantCostHistory Product1688VariantCostHistory[]
+
   @@index([originalUrl])
   @@index([status])
   @@index([createdAt])
@@ -510,4 +516,48 @@ enum RejectionReason {
   NOT_SUITABLE
   SUPPLIER_ISSUES
   OTHER
+}
+
+// ============================================================================
+// Product1688 Variant Cost Calculation History
+// ============================================================================
+
+model Product1688VariantCostHistory {
+  id String @id @default(cuid())
+
+  // Relations
+  product1688Id String
+  product1688   Product1688 @relation(fields: [product1688Id], references: [id], onDelete: Cascade)
+
+  variantSku String // SKU of the variant this calculation is for
+  userId     String
+  user       User   @relation(fields: [userId], references: [id])
+
+  // Input parameters
+  importPrice             Float
+  domesticShippingCN      Float @default(0)
+  internationalShippingVN Float @default(0)
+  handlingFee             Float @default(0)
+  exchangeRateCNY         Float
+  quantity                Int
+  returnRate              Float
+  platformFeeRate         Float
+  profitMarginRate        Float
+
+  // Calculated results
+  baseCost              Float
+  effectiveCost         Float
+  suggestedSellingPrice Float
+  netProfit             Float
+  breakEvenPrice        Float
+
+  // Additional data
+  calculationData Json? // Full calculation breakdown
+  notes           String?
+
+  createdAt DateTime @default(now())
+
+  @@index([product1688Id, variantSku])
+  @@index([userId])
+  @@map("product1688_variant_cost_history")
 }

@@ -20,6 +20,7 @@ import { TranslateProduct1688Dto } from './dto/translate-product1688.dto';
 import { ApproveProduct1688Dto } from './dto/approve-product1688.dto';
 import { RejectProduct1688Dto } from './dto/reject-product1688.dto';
 import { QueryProduct1688Dto } from './dto/query-product1688.dto';
+import { SaveCostCalculationDto } from './dto/save-cost-calculation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -150,5 +151,36 @@ export class Product1688Controller {
   @ApiResponse({ status: 400, description: 'Cannot delete approved product' })
   async remove(@Param('id') id: string) {
     return this.product1688Service.remove(id);
+  }
+
+  /**
+   * Save variant cost calculation (Admin/Owner only)
+   */
+  @Post('variant-cost/calculate')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
+  @ApiOperation({ summary: 'Calculate and save variant cost' })
+  @ApiResponse({ status: 201, description: 'Cost calculation saved successfully' })
+  @ApiResponse({ status: 404, description: 'Product1688 not found' })
+  async saveVariantCostCalculation(
+    @Request() req: any,
+    @Body() dto: SaveCostCalculationDto,
+  ) {
+    return this.product1688Service.saveVariantCostCalculation(req.user.userId, dto);
+  }
+
+  /**
+   * Get variant cost calculation history (Admin/Owner only)
+   */
+  @Get(':id/variant-cost/:variantSku')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
+  @ApiOperation({ summary: 'Get variant cost calculation history' })
+  @ApiResponse({ status: 200, description: 'Cost calculation history' })
+  async getVariantCostHistory(
+    @Param('id') id: string,
+    @Param('variantSku') variantSku: string,
+  ) {
+    return this.product1688Service.getVariantCostHistory(id, variantSku);
   }
 }
