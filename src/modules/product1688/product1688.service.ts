@@ -404,10 +404,16 @@ export class Product1688Service {
   async approve(id: string, userId: string, dto: ApproveProduct1688Dto): Promise<ApproveResult> {
     const product1688 = await this.findOne(id);
 
-    // Validate status
+    // Validate status - prevent double approval
     if (product1688.status === Product1688Status.APPROVED) {
       throw new BadRequestException('Product already approved');
     }
+
+    // Optional: Allow re-approval of rejected products
+    // (Business decision - currently allowed)
+    // if (product1688.status === Product1688Status.REJECTED) {
+    //   throw new BadRequestException('Cannot approve a rejected product');
+    // }
 
     // Check SKU uniqueness
     const existingSku = await this.prisma.product.findUnique({
@@ -511,8 +517,17 @@ export class Product1688Service {
   async reject(id: string, userId: string, dto: RejectProduct1688Dto) {
     const product = await this.findOne(id);
 
+    // Check if already rejected
     if (product.status === Product1688Status.REJECTED) {
       throw new BadRequestException('Product already rejected');
+    }
+
+    // FIX: Prevent rejecting approved products
+    if (product.status === Product1688Status.APPROVED) {
+      throw new BadRequestException(
+        'Cannot reject an approved product. The product has already been imported to the catalog. ' +
+        'Please delete the imported product first if you need to reject this.'
+      );
     }
 
     const updated = await this.prisma.product1688.update({

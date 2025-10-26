@@ -40,22 +40,9 @@ export class Product1688Controller {
   @ApiResponse({ status: 201, description: 'Product saved successfully' })
   @ApiResponse({ status: 409, description: 'Product already exists' })
   async create(@Request() req: any, @Body() createDto: CreateProduct1688Dto) {
-    try {
-      const product = await this.product1688Service.create(req.user.userId, createDto);
-      return {
-        success: true,
-        data: product,
-      };
-    } catch (error: any) {
-      if (error.status === 409) {
-        return {
-          success: false,
-          error: error.message,
-          ...error.response,
-        };
-      }
-      throw error;
-    }
+    // Let NestJS handle ConflictException automatically (returns 409)
+    const product = await this.product1688Service.create(req.user.userId, createDto);
+    return product;
   }
 
   /**
