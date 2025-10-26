@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsArray } from 'class-validator';
 
 export class UpdateProduct1688Dto {
   @ApiPropertyOptional({
@@ -44,4 +44,16 @@ export class UpdateProduct1688Dto {
   })
   @IsOptional()
   costCalculation?: any;
+
+  @ApiPropertyOptional({
+    description: 'Selected images by staff',
+    example: [
+      'https://cbu01.alicdn.com/img/ibank/123.jpg',
+      'https://cbu01.alicdn.com/img/ibank/456.jpg',
+    ],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  selectedImages?: string[];
 }
