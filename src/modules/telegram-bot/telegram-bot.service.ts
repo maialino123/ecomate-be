@@ -160,13 +160,30 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     const fullWebhookUrl = `${webhookUrl}/${this.webhookPath}`;
+    const secret = this.configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
+
+    // Validate secret token format (Telegram only allows: A-Z, a-z, 0-9, _, -)
+    const isValidSecret = secret &&
+                          !secret.includes('$') &&           // No shell commands
+                          !secret.includes('your-') &&       // No placeholder text
+                          /^[A-Za-z0-9_-]+$/.test(secret);   // Only allowed characters
+
+    const webhookOptions: any = {
+      drop_pending_updates: true,
+    };
+
+    if (isValidSecret) {
+      webhookOptions.secret_token = secret;
+      this.logger.log('Webhook will use secret token for security');
+    } else {
+      this.logger.warn(
+        'TELEGRAM_WEBHOOK_SECRET is not set or contains invalid characters - webhook will be less secure. ' +
+        'Secret must only contain: A-Z, a-z, 0-9, underscore (_), and hyphen (-)'
+      );
+    }
 
     try {
-      await this.bot.api.setWebhook(fullWebhookUrl, {
-        drop_pending_updates: true,
-        secret_token: this.configService.get<string>('TELEGRAM_WEBHOOK_SECRET'),
-      });
-
+      await this.bot.api.setWebhook(fullWebhookUrl, webhookOptions);
       this.logger.log(`Webhook set to: ${fullWebhookUrl}`);
     } catch (error) {
       this.logger.error('Failed to set webhook:', error);

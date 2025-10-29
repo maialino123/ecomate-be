@@ -191,6 +191,26 @@ TELEGRAM_WEBHOOK_URL=https://your-railway-app.railway.app/telegram/webhook
 TELEGRAM_WEBHOOK_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 ```
 
+**⚠️ IMPORTANT - Railway Environment Variables:**
+
+Railway does NOT execute shell commands in environment variables. You must:
+
+1. **For TELEGRAM_WEBHOOK_SECRET:**
+   ```bash
+   # Run this locally in your terminal:
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+   # Copy the output (example: 7f3a8d2c1e9b4f6a0d8c7e5a...)
+   # Then set in Railway Variables UI:
+   TELEGRAM_WEBHOOK_SECRET=<paste-your-generated-hex-string>
+   ```
+
+2. **For REDIS_URL:**
+   - Railway automatically provides this when you add Redis database
+   - Go to Railway → New → Database → Add Redis
+   - REDIS_URL will be automatically set
+   - No need to set REDIS_HOST, REDIS_PORT, or REDIS_PASSWORD (app parses REDIS_URL)
+
 ### 3. Deploy to Railway
 ```bash
 git add .
