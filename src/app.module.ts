@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { EnvModule } from './env/env.module';
+import { EnvService } from './env/env.service';
 import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -35,16 +36,16 @@ import { HealthModule } from './health/health.module';
 
     // BullMQ (Job Queue)
     BullModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
+      imports: [EnvModule],
+      useFactory: (envService: EnvService) => {
+        const redisConfig = envService.getRedisConfig();
 
-        if (!redisUrl) {
+        if (!redisConfig.url) {
           throw new Error('REDIS_URL is required for BullMQ job queue');
         }
 
         // Parse Redis URL: redis://[username]:[password]@[host]:[port]/[db]
-        const url = new URL(redisUrl);
+        const url = new URL(redisConfig.url);
 
         return {
           connection: {
@@ -56,7 +57,7 @@ import { HealthModule } from './health/health.module';
           },
         };
       },
-      inject: [ConfigService],
+      inject: [EnvService],
     }),
 
     // Core modules
