@@ -6,6 +6,7 @@ import { ReminderService } from './reminder.service';
 import { UserBindingService } from './user-binding.service';
 import { TranslationService } from '../../translation/translation.service';
 import { BotCommand } from '../interfaces/command.interface';
+import { escapeHtml } from '../utils/message-formatter';
 import chrono from 'chrono-node';
 
 @Injectable()
@@ -115,12 +116,12 @@ Use /help to see all available commands.
 
       // Notes section
       if (recentNotes.length > 0) {
-        message += '📝 **Recent Notes:**\n';
+        message += '📝 <b>Recent Notes:</b>\n';
         recentNotes.forEach((note, index) => {
           const preview = note.content.length > 50
             ? note.content.substring(0, 50) + '...'
             : note.content;
-          message += `${index + 1}. ${preview}\n`;
+          message += `${index + 1}. ${escapeHtml(preview)}\n`;
         });
         message += '\n';
       } else {
@@ -129,13 +130,13 @@ Use /help to see all available commands.
 
       // Todos section
       if (activeTodos.length > 0) {
-        message += '✅ **Active Todos:**\n';
+        message += '✅ <b>Active Todos:</b>\n';
         activeTodos.forEach((todo, index) => {
           const checkbox = todo.completed ? '☑️' : '☐';
           const preview = todo.content.length > 50
             ? todo.content.substring(0, 50) + '...'
             : todo.content;
-          message += `${checkbox} ${index + 1}. ${preview}\n`;
+          message += `${checkbox} ${index + 1}. ${escapeHtml(preview)}\n`;
         });
         message += '\n';
       } else {
@@ -144,19 +145,19 @@ Use /help to see all available commands.
 
       // Reminders section
       if (upcomingReminders.length > 0) {
-        message += '⏰ **Upcoming Reminders:**\n';
+        message += '⏰ <b>Upcoming Reminders:</b>\n';
         upcomingReminders.forEach((reminder, index) => {
           const timeStr = this.formatDateTime(reminder.remindAt);
           const preview = reminder.message.length > 40
             ? reminder.message.substring(0, 40) + '...'
             : reminder.message;
-          message += `${index + 1}. ${preview} (${timeStr})\n`;
+          message += `${index + 1}. ${escapeHtml(preview)} (${timeStr})\n`;
         });
       } else {
         message += '⏰ No upcoming reminders.\n';
       }
 
-      await ctx.reply(message, { parse_mode: 'Markdown' });
+      await ctx.reply(message, { parse_mode: 'HTML' });
     } catch (error) {
       this.logger.error('Failed to list items:', error);
       await ctx.reply('❌ Failed to retrieve your items. Please try again.');
@@ -210,7 +211,9 @@ Use /help to see all available commands.
       const reminder = await this.reminderService.createReminder(user.id, chatId, message, remindAt);
       const timeStr = this.formatDateTime(remindAt);
 
-      await ctx.reply(`⏰ Reminder set for ${timeStr}:\n"${message}"`);
+      await ctx.reply(`⏰ Reminder set for ${timeStr}:\n${escapeHtml(message)}`, {
+        parse_mode: 'HTML',
+      });
     } catch (error) {
       this.logger.error('Failed to create reminder:', error);
       await ctx.reply('❌ Failed to set reminder. Please try again.');
@@ -251,31 +254,31 @@ Use /help to see all available commands.
    */
   async handleHelp(ctx: Context): Promise<void> {
     const helpMessage = `
-🤖 **Bot Commands Help**
+🤖 <b>Bot Commands Help</b>
 
-**📝 Notes**
-/note <text> - Save a quick note
+<b>📝 Notes</b>
+/note &lt;text&gt; - Save a quick note
 Example: /note Remember to buy milk
 
-**✅ Todos**
-/todo <task> - Add a new task
+<b>✅ Todos</b>
+/todo &lt;task&gt; - Add a new task
 Example: /todo Finish project report
 
-**📋 List**
+<b>📋 List</b>
 /list - Show your recent notes, todos, and reminders
 
-**⏰ Reminders**
-/remind <time> <message> - Set a reminder
+<b>⏰ Reminders</b>
+/remind &lt;time&gt; &lt;message&gt; - Set a reminder
 Examples:
 • /remind tomorrow at 9am Take medicine
 • /remind in 2 hours Check email
 • /remind next Monday Call John
 
-**🌐 Translation**
-/translate <text> - Translate text
+<b>🌐 Translation</b>
+/translate &lt;text&gt; - Translate text
 Example: /translate Hello, how are you?
 
-**ℹ️ Info**
+<b>ℹ️ Info</b>
 /help - Show this help message
 /start - Restart the bot
 
@@ -283,7 +286,7 @@ Example: /translate Hello, how are you?
 Need help? Contact support or check the documentation.
 `;
 
-    await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+    await ctx.reply(helpMessage, { parse_mode: 'HTML' });
   }
 
   /**

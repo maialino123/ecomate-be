@@ -5,6 +5,7 @@ import { JobQueue, ReminderJobData } from '../interfaces/job.interface';
 import { ReminderService } from '../services/reminder.service';
 import { Bot } from 'grammy';
 import { ConfigService } from '@nestjs/config';
+import { escapeHtml } from '../utils/message-formatter';
 
 @Processor(JobQueue.REMINDERS)
 export class ReminderProcessor extends WorkerHost {
@@ -31,10 +32,25 @@ export class ReminderProcessor extends WorkerHost {
     this.logger.log(`Processing reminder ${reminderId} for user ${telegramUserId}`);
 
     try {
-      // Send the reminder message
-      await this.bot.api.sendMessage(chatId, `⏰ **Reminder:**\n\n${message}`, {
-        parse_mode: 'Markdown',
-      });
+      // Try to send with HTML formatting first (escaped for safety)
+      const formattedMessage = `⏰ <b>Reminder:</b>\n\n${escapeHtml(message)}`;
+
+      try {
+        await this.bot.api.sendMessage(chatId, formattedMessage, {
+          parse_mode: 'HTML',
+        });
+      } catch (sendError: any) {
+        // If HTML parse error, fallback to plain text
+        if (sendError.description?.includes("can't parse entities")) {
+          this.logger.warn(
+            `HTML parse failed for reminder ${reminderId}, falling back to plain text`
+          );
+          await this.bot.api.sendMessage(chatId, `⏰ Reminder:\n\n${message}`);
+        } else {
+          // Re-throw other errors (network, permissions, etc.)
+          throw sendError;
+        }
+      }
 
       // Mark reminder as sent
       await this.reminderService.markReminderAsSent(reminderId);
