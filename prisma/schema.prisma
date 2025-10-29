@@ -39,6 +39,9 @@ model User {
   // 1688 Variant Cost History relations
   variantCostHistory Product1688VariantCostHistory[]
 
+  // Telegram Bot relation
+  telegramUser TelegramUser?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -560,4 +563,140 @@ model Product1688VariantCostHistory {
   @@index([product1688Id, variantSku])
   @@index([userId])
   @@map("product1688_variant_cost_history")
+}
+
+// Telegram Bot Integration
+model TelegramUser {
+  id                String  @id @default(cuid())
+  telegramUserId    BigInt  @unique
+  telegramUsername  String?
+  telegramFirstName String?
+  telegramLastName  String?
+
+  // Link to main User account (optional)
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Settings
+  status   TelegramUserStatus @default(ACTIVE)
+  language String             @default("en")
+  timezone String             @default("UTC")
+
+  // Features enabled
+  notificationsEnabled Boolean @default(true)
+
+  // Relations
+  notes     TelegramNote[]
+  todos     TelegramTodo[]
+  reminders TelegramReminder[]
+
+  // Metadata
+  metadata Json?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastInteractionAt DateTime @default(now())
+
+  @@index([telegramUserId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum TelegramUserStatus {
+  ACTIVE
+  BLOCKED
+  INACTIVE
+}
+
+model TelegramNote {
+  id             String       @id @default(cuid())
+  telegramUserId BigInt
+  telegramUser   TelegramUser @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  content String
+
+  // Optional categorization
+  tags String[] @default([])
+
+  // Metadata
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([telegramUserId])
+  @@index([createdAt])
+}
+
+model TelegramTodo {
+  id             String       @id @default(cuid())
+  telegramUserId BigInt
+  telegramUser   TelegramUser @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  content     String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  // Optional scheduling
+  dueDate  DateTime?
+  priority TodoPriority @default(MEDIUM)
+
+  // Optional categorization
+  tags String[] @default([])
+
+  // Metadata
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([telegramUserId])
+  @@index([completed])
+  @@index([dueDate])
+  @@index([createdAt])
+}
+
+enum TodoPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model TelegramReminder {
+  id             String       @id @default(cuid())
+  telegramUserId BigInt
+  telegramUser   TelegramUser @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  message  String
+  remindAt DateTime
+
+  // Status tracking
+  status        ReminderStatus @default(SCHEDULED)
+  sentAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?
+
+  // Recurring reminders (future enhancement)
+  recurring        Boolean   @default(false)
+  recurringPattern String? // e.g., "daily", "weekly", "monthly"
+  nextRemindAt     DateTime?
+
+  // Metadata
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([telegramUserId])
+  @@index([remindAt])
+  @@index([status])
+  @@index([sentAt])
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
 }

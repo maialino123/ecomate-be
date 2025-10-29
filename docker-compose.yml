@@ -69,6 +69,8 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://ecomate:ecomate123@postgres:5432/ecomate_db?schema=public
       REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       JWT_SECRET: your-super-secret-jwt-key-min-32-chars-dev
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-min-32-chars-dev
       S3_ENDPOINT: http://minio:9000
@@ -76,6 +78,10 @@ services:
       S3_SECRET_ACCESS_KEY: minioadmin
       S3_BUCKET_NAME: ecomate-dev
       S3_PUBLIC_URL: http://localhost:9000
+      # Telegram Bot (optional - uncomment and configure to enable)
+      # TELEGRAM_BOT_TOKEN: your-bot-token-from-botfather
+      # TELEGRAM_WEBHOOK_URL: https://your-domain.com/telegram/webhook
+      # TELEGRAM_WEBHOOK_SECRET: your-random-secret-token
     ports:
       - '3000:3000'
     volumes:
