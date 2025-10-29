@@ -187,7 +187,7 @@ src/modules/telegram-bot/
 ```bash
 # .env
 TELEGRAM_BOT_TOKEN=your-token-from-botfather
-TELEGRAM_WEBHOOK_URL=https://your-railway-app.railway.app/telegram/webhook
+TELEGRAM_WEBHOOK_URL=https://your-railway-app.railway.app/v1/telegram/webhook
 TELEGRAM_WEBHOOK_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 ```
 

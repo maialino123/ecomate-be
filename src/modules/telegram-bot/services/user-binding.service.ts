@@ -16,46 +16,81 @@ export class UserBindingService {
     firstName?: string;
     lastName?: string;
   }): Promise<PrismaTelegramUser> {
-    let user = await this.prisma.telegramUser.findUnique({
-      where: { telegramUserId: BigInt(telegramUserId) },
-    });
-
-    if (!user) {
-      this.logger.log(`Creating new Telegram user: ${telegramUserId}`);
-      user = await this.prisma.telegramUser.create({
-        data: {
-          telegramUserId: BigInt(telegramUserId),
-          telegramUsername: userData.username,
-          telegramFirstName: userData.firstName,
-          telegramLastName: userData.lastName,
-          status: TelegramUserStatus.ACTIVE,
-          language: 'en',
-          timezone: 'UTC',
-        },
+    try {
+      let user = await this.prisma.telegramUser.findUnique({
+        where: { telegramUserId: BigInt(telegramUserId) },
       });
-    } else {
-      // Update user info if changed
-      const updates: any = {};
-      if (userData.username && userData.username !== user.telegramUsername) {
-        updates.telegramUsername = userData.username;
-      }
-      if (userData.firstName && userData.firstName !== user.telegramFirstName) {
-        updates.telegramFirstName = userData.firstName;
-      }
-      if (userData.lastName && userData.lastName !== user.telegramLastName) {
-        updates.telegramLastName = userData.lastName;
-      }
-      updates.lastInteractionAt = new Date();
 
-      if (Object.keys(updates).length > 0) {
-        user = await this.prisma.telegramUser.update({
-          where: { telegramUserId: BigInt(telegramUserId) },
-          data: updates,
-        });
+      if (!user) {
+        this.logger.log(
+          `Creating new Telegram user: ${telegramUserId} (@${userData.username || 'no-username'})`,
+        );
+
+        try {
+          user = await this.prisma.telegramUser.create({
+            data: {
+              telegramUserId: BigInt(telegramUserId),
+              telegramUsername: userData.username,
+              telegramFirstName: userData.firstName,
+              telegramLastName: userData.lastName,
+              status: TelegramUserStatus.ACTIVE,
+              language: 'en',
+              timezone: 'UTC',
+            },
+          });
+          this.logger.log(`Successfully created Telegram user: ${telegramUserId}`);
+        } catch (createError) {
+          this.logger.error(
+            `Failed to create Telegram user ${telegramUserId}:`,
+            createError,
+          );
+          throw new Error(
+            `Database error: Unable to create user. Please try again or contact support.`,
+          );
+        }
+      } else {
+        // Update user info if changed
+        const updates: any = {};
+        if (userData.username && userData.username !== user.telegramUsername) {
+          updates.telegramUsername = userData.username;
+        }
+        if (userData.firstName && userData.firstName !== user.telegramFirstName) {
+          updates.telegramFirstName = userData.firstName;
+        }
+        if (userData.lastName && userData.lastName !== user.telegramLastName) {
+          updates.telegramLastName = userData.lastName;
+        }
+        updates.lastInteractionAt = new Date();
+
+        if (Object.keys(updates).length > 1) {
+          // More than just lastInteractionAt
+          this.logger.debug(`Updating user info for ${telegramUserId}`);
+        }
+
+        if (Object.keys(updates).length > 0) {
+          try {
+            user = await this.prisma.telegramUser.update({
+              where: { telegramUserId: BigInt(telegramUserId) },
+              data: updates,
+            });
+          } catch (updateError) {
+            this.logger.error(
+              `Failed to update Telegram user ${telegramUserId}:`,
+              updateError,
+            );
+            // Don't throw on update errors, just log them
+          }
+        }
       }
+
+      return user;
+    } catch (error) {
+      this.logger.error(
+        `Error in getOrCreateUser for ${telegramUserId}:`,
+        error,
+      );
+      throw error;
     }
-
-    return user;
   }
 
   /**

@@ -44,7 +44,7 @@ Thêm các biến sau vào file `.env`:
 ```bash
 # Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz  # Token từ BotFather
-TELEGRAM_WEBHOOK_URL=https://your-railway-app.railway.app/telegram/webhook
+TELEGRAM_WEBHOOK_URL=https://your-railway-app.railway.app/v1/telegram/webhook
 TELEGRAM_WEBHOOK_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 ```
 
@@ -244,7 +244,7 @@ docker-compose up -d postgres redis
 2. Set environment variables:
 ```bash
 export TELEGRAM_BOT_TOKEN=your-test-bot-token
-export TELEGRAM_WEBHOOK_URL=https://your-ngrok-url.ngrok.io/telegram/webhook
+export TELEGRAM_WEBHOOK_URL=https://your-ngrok-url.ngrok.io/v1/telegram/webhook
 ```
 
 3. Use ngrok for local webhook testing:
@@ -307,6 +307,76 @@ railway logs
 
 ## 🚧 Troubleshooting
 
+### ❌ Error 401 - Unauthorized
+
+**Nguyên nhân có thể:**
+- Bot token invalid hoặc expired
+- Webhook chưa được set đúng
+- Database không kết nối được
+- User không được tạo trong database
+
+**Cách kiểm tra:**
+
+1. **Verify bot token:**
+```bash
+curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe
+```
+Nếu trả về thông tin bot → Token valid
+Nếu trả về 401 → Token invalid, cần tạo lại bot
+
+2. **Kiểm tra webhook:**
+```bash
+curl https://api.telegram.org/bot<YOUR_TOKEN>/getWebhookInfo
+```
+Đảm bảo:
+- `url` có format: `https://your-domain.com/v1/telegram/webhook/<secret>`
+- `has_custom_certificate`: false
+- `pending_update_count`: 0 hoặc thấp
+- Không có `last_error_message`
+
+3. **Xem Railway logs:**
+```bash
+railway logs --tail 100
+```
+Tìm các dòng log:
+- `✓ Database connection successful`
+- `✓ TelegramUser table exists`
+- `Creating new Telegram user: <id>`
+- `User binding failed` (nếu có lỗi)
+
+4. **Test database connection:**
+Vào Railway dashboard → PostgreSQL → Connect
+```sql
+-- Check if table exists
+SELECT tablename FROM pg_tables WHERE tablename = 'TelegramUser';
+
+-- Check users
+SELECT "telegramUserId", "telegramUsername", "status", "createdAt"
+FROM "TelegramUser"
+ORDER BY "createdAt" DESC LIMIT 10;
+```
+
+**Giải pháp:**
+
+1. **Nếu bot token invalid:**
+   - Tạo bot mới trên @BotFather: `/newbot`
+   - Update `TELEGRAM_BOT_TOKEN` trên Railway
+   - Restart app
+
+2. **Nếu webhook sai:**
+   - Update `TELEGRAM_WEBHOOK_URL` thành: `https://your-app.railway.app/v1/telegram/webhook`
+   - Restart app (webhook sẽ tự động được set lại)
+
+3. **Nếu database lỗi:**
+   - Check `DATABASE_URL` có đúng không
+   - Run migrations: `npx prisma db push`
+   - Restart app
+
+4. **Nếu user không được tạo:**
+   - Xem logs để biết lỗi cụ thể
+   - Thử gửi `/start` lại
+   - Check database constraints
+
 ### Bot không nhận tin nhắn
 
 1. Kiểm tra webhook đã được set chưa:
@@ -317,6 +387,26 @@ curl https://api.telegram.org/bot<TOKEN>/getWebhookInfo
 2. Kiểm tra webhook URL có HTTPS và accessible không
 
 3. Kiểm tra logs xem có lỗi gì không
+
+4. Verify prefix `/v1` có trong webhook URL không
+
+### ❌ Registration Failed Error
+
+Khi user nhận message: "Registration failed. Our database might be temporarily unavailable"
+
+**Nguyên nhân:**
+- Database connection bị mất
+- TelegramUser table chưa tồn tại
+- Database constraint violations
+
+**Giải pháp:**
+1. Check Railway logs để xem error cụ thể
+2. Verify database migrations đã chạy:
+```bash
+npx prisma db push
+```
+3. Check PostgreSQL service trên Railway có đang chạy không
+4. Restart app nếu cần
 
 ### Reminder không được gửi
 
@@ -330,6 +420,53 @@ curl https://api.telegram.org/bot<TOKEN>/getWebhookInfo
 1. Kiểm tra `CLOUDFLARE_WORKER_AI_URL` đã được set chưa
 2. Test TranslationService trực tiếp
 3. Xem logs của TranslationModule
+
+### ⚙️ Debugging Commands
+
+**Check bot status:**
+```bash
+# Get bot info
+curl https://api.telegram.org/bot<TOKEN>/getMe
+
+# Get webhook info
+curl https://api.telegram.org/bot<TOKEN>/getWebhookInfo
+
+# Delete webhook (if needed)
+curl https://api.telegram.org/bot<TOKEN>/deleteWebhook
+```
+
+**Railway commands:**
+```bash
+# View logs
+railway logs --tail 100
+
+# View logs with filter
+railway logs | grep "Telegram"
+
+# Check environment variables
+railway vars
+
+# Restart service
+railway up --detach
+```
+
+**Database queries:**
+```sql
+-- Count users by status
+SELECT status, COUNT(*)
+FROM "TelegramUser"
+GROUP BY status;
+
+-- Recent user activity
+SELECT "telegramUserId", "telegramUsername", "lastInteractionAt"
+FROM "TelegramUser"
+WHERE "lastInteractionAt" IS NOT NULL
+ORDER BY "lastInteractionAt" DESC
+LIMIT 10;
+
+-- Check for blocked users
+SELECT * FROM "TelegramUser" WHERE status = 'BLOCKED';
+```
 
 ## 🔮 Tính năng tương lai
 

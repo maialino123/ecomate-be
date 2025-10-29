@@ -1,9 +1,10 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Bot, webhookCallback, Context } from 'grammy';
+import { Bot, webhookCallback } from 'grammy';
 import { CommandService } from './services/command.service';
 import { UserBindingService } from './services/user-binding.service';
 import { ReminderService } from './services/reminder.service';
+import { PrismaService } from '../../db/prisma.service';
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
@@ -16,6 +17,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly commandService: CommandService,
     private readonly userBindingService: UserBindingService,
     private readonly reminderService: ReminderService,
+    private readonly prisma: PrismaService,
   ) {
     const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
     if (!token) {
@@ -28,6 +30,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.logger.log('Initializing Telegram Bot...');
+
+    // Check database connection first
+    await this.checkDatabaseConnection();
 
     // Register middleware
     this.registerMiddleware();
@@ -44,6 +49,46 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Telegram Bot initialized successfully');
   }
 
+  /**
+   * Check database connection and required tables
+   */
+  private async checkDatabaseConnection() {
+    try {
+      this.logger.log('Checking database connection...');
+
+      // Test database connection
+      await this.prisma.$queryRaw`SELECT 1`;
+      this.logger.log('✓ Database connection successful');
+
+      // Check if TelegramUser table exists
+      const result = await this.prisma.$queryRaw<any[]>`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_schema = 'public'
+          AND table_name = 'TelegramUser'
+        );
+      `;
+
+      const tableExists = result[0]?.exists;
+      if (!tableExists) {
+        throw new Error(
+          'TelegramUser table does not exist. Please run: npx prisma db push',
+        );
+      }
+      this.logger.log('✓ TelegramUser table exists');
+
+      // Count existing users
+      const userCount = await this.prisma.telegramUser.count();
+      this.logger.log(`✓ Found ${userCount} existing Telegram users`);
+    } catch (error) {
+      this.logger.error('❌ Database connection check failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(
+        `Telegram Bot initialization failed: Database is not available or not properly configured. ${errorMessage}`,
+      );
+    }
+  }
+
   async onModuleDestroy() {
     this.logger.log('Shutting down Telegram Bot...');
     await this.bot.stop();
@@ -56,39 +101,73 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     // Logging middleware
     this.bot.use(async (ctx, next) => {
       const start = Date.now();
+      const userId = ctx.from?.id;
+      const username = ctx.from?.username || 'unknown';
+      const messageType = ctx.message?.text || ctx.callbackQuery?.data || 'unknown';
+
+      this.logger.debug(`Incoming update from user ${userId} (@${username}): ${messageType}`);
+
       await next();
+
       const duration = Date.now() - start;
-      this.logger.debug(`Processed update in ${duration}ms`);
+      this.logger.debug(`Processed update from ${userId} in ${duration}ms`);
     });
 
-    // Authentication middleware
+    // User binding middleware - ensure user exists in DB (BEFORE auth check)
+    this.bot.use(async (ctx, next) => {
+      const user = ctx.from;
+      if (!user) {
+        this.logger.warn('Received update without user information');
+        return;
+      }
+
+      try {
+        await this.userBindingService.getOrCreateUser(user.id, {
+          username: user.username,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        });
+        await next();
+      } catch (error) {
+        this.logger.error(`User binding failed for ${user.id}:`, error);
+        try {
+          await ctx.reply(
+            '❌ Registration failed. Our database might be temporarily unavailable.\n\n' +
+            'Please try again in a few moments. If the problem persists, please contact support.',
+          );
+        } catch (replyError) {
+          this.logger.error('Failed to send error message to user:', replyError);
+        }
+        // Don't call next() - stop processing this update
+        return;
+      }
+    });
+
+    // Authentication middleware - check if user is blocked
     this.bot.use(async (ctx, next) => {
       const userId = ctx.from?.id;
       if (!userId) {
         return;
       }
 
-      // Check if user is authorized
-      const isAuthorized = await this.commandService.isUserAuthorized(userId);
-      if (!isAuthorized) {
-        await ctx.reply('❌ You are blocked from using this bot.');
-        return;
-      }
+      try {
+        // Check if user is authorized
+        const isAuthorized = await this.commandService.isUserAuthorized(userId);
+        if (!isAuthorized) {
+          this.logger.warn(`Blocked user ${userId} attempted to use bot`);
+          await ctx.reply(
+            '❌ You are blocked from using this bot.\n\n' +
+            'If you believe this is a mistake, please contact support.',
+          );
+          return;
+        }
 
-      await next();
-    });
-
-    // User binding middleware - ensure user exists in DB
-    this.bot.use(async (ctx, next) => {
-      const user = ctx.from;
-      if (user) {
-        await this.userBindingService.getOrCreateUser(user.id, {
-          username: user.username,
-          firstName: user.first_name,
-          lastName: user.last_name,
-        });
+        await next();
+      } catch (error) {
+        this.logger.error(`Authorization check failed for ${userId}:`, error);
+        // Continue processing - don't block users due to auth check errors
+        await next();
       }
-      await next();
     });
   }
 

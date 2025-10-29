@@ -28,26 +28,53 @@ export class CommandService {
     const user = ctx.from;
     if (!user) return;
 
-    await this.userBindingService.getOrCreateUser(user.id, {
-      username: user.username,
-      firstName: user.first_name,
-      lastName: user.last_name,
-    });
+    try {
+      // Verify user is properly registered
+      const telegramUser = await this.userBindingService.getOrCreateUser(user.id, {
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      });
 
-    const welcomeMessage = `
-👋 Welcome to your Personal Assistant Bot!
+      const isNewUser = !telegramUser.lastInteractionAt ||
+                        Date.now() - telegramUser.lastInteractionAt.getTime() < 5000;
+
+      const welcomeMessage = isNewUser
+        ? `
+👋 Welcome to your Personal Assistant Bot, ${user.first_name || 'there'}!
+
+✅ Your account has been successfully registered.
 
 I can help you with:
-• 📝 Taking notes
-• ✅ Managing todos
-• ⏰ Setting reminders
-• 🌐 Translating text
+• 📝 Taking notes - /note <text>
+• ✅ Managing todos - /todo <task>
+• ⏰ Setting reminders - /remind <time> <message>
+• 🌐 Translating text - /translate <text>
+• 📋 Viewing your items - /list
+
+Use /help to see detailed command instructions.
+
+Let's get started! 🚀
+`
+        : `
+👋 Welcome back, ${user.first_name || 'there'}!
+
+I'm here to help you with notes, todos, reminders, and translations.
 
 Use /help to see all available commands.
 `;
 
-    await ctx.reply(welcomeMessage);
-    this.logger.log(`User ${user.id} started the bot`);
+      await ctx.reply(welcomeMessage);
+      this.logger.log(
+        `User ${user.id} (@${user.username || 'no-username'}) ${isNewUser ? 'registered and' : ''} started the bot`,
+      );
+    } catch (error) {
+      this.logger.error(`Failed to handle /start for user ${user.id}:`, error);
+      await ctx.reply(
+        '❌ An error occurred while registering your account.\n\n' +
+        'Please try again. If the problem persists, the database may be temporarily unavailable.',
+      );
+    }
   }
 
   /**
