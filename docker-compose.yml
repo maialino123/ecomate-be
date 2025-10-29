@@ -80,7 +80,7 @@ services:
       S3_PUBLIC_URL: http://localhost:9000
       # Telegram Bot (optional - uncomment and configure to enable)
       # TELEGRAM_BOT_TOKEN: your-bot-token-from-botfather
-      # TELEGRAM_WEBHOOK_URL: https://your-domain.com/telegram/webhook
+      # TELEGRAM_WEBHOOK_URL: https://your-domain.com/v1/telegram/webhook
       # TELEGRAM_WEBHOOK_SECRET: your-random-secret-token
     ports:
       - '3000:3000'
