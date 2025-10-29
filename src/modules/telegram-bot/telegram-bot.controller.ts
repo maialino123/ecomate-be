@@ -3,6 +3,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { Update } from 'grammy/types';
 import { TelegramBotService } from './telegram-bot.service';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('telegram')
 export class TelegramBotController {
@@ -16,6 +17,7 @@ export class TelegramBotController {
   /**
    * Webhook endpoint for receiving Telegram updates
    */
+  @Public()
   @Post('webhook/:secret')
   async handleWebhook(
     @Req() req: FastifyRequest,
@@ -43,6 +45,7 @@ export class TelegramBotController {
   /**
    * Health check endpoint
    */
+  @Public()
   @Post('health')
   async healthCheck() {
     try {
