@@ -36,13 +36,26 @@ import { HealthModule } from './health/health.module';
     // BullMQ (Job Queue)
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          host: configService.get('REDIS_HOST') || 'localhost',
-          port: configService.get('REDIS_PORT') || 6379,
-          password: configService.get('REDIS_PASSWORD'),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+
+        if (!redisUrl) {
+          throw new Error('REDIS_URL is required for BullMQ job queue');
+        }
+
+        // Parse Redis URL: redis://[username]:[password]@[host]:[port]/[db]
+        const url = new URL(redisUrl);
+
+        return {
+          connection: {
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            password: url.password || undefined,
+            username: url.username && url.username !== 'default' ? url.username : undefined,
+            db: url.pathname ? parseInt(url.pathname.slice(1)) : 0,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
 
