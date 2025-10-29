@@ -34,6 +34,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     // Check database connection first
     await this.checkDatabaseConnection();
 
+    // Initialize bot (fetch bot info from Telegram API)
+    await this.bot.init();
+    this.logger.log(`✓ Bot initialized: @${this.bot.botInfo.username} (${this.bot.botInfo.first_name})`);
+
     // Register middleware
     this.registerMiddleware();
 
@@ -309,6 +313,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
    * Get bot info
    */
   async getBotInfo() {
+    // Return cached botInfo if bot is already initialized
+    if (this.bot.isInited()) {
+      return this.bot.botInfo;
+    }
+    // Fallback to API call if not initialized (shouldn't happen in normal flow)
+    this.logger.warn('Bot not initialized, fetching botInfo via API call');
     return this.bot.api.getMe();
   }
 }
