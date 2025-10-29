@@ -118,6 +118,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       const user = ctx.from;
       if (!user) {
         this.logger.warn('Received update without user information');
+        // Continue processing even without user info
+        await next();
         return;
       }
 
@@ -127,26 +129,24 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           firstName: user.first_name,
           lastName: user.last_name,
         });
-        await next();
       } catch (error) {
-        this.logger.error(`User binding failed for ${user.id}:`, error);
-        try {
-          await ctx.reply(
-            '❌ Registration failed. Our database might be temporarily unavailable.\n\n' +
-            'Please try again in a few moments. If the problem persists, please contact support.',
-          );
-        } catch (replyError) {
-          this.logger.error('Failed to send error message to user:', replyError);
-        }
-        // Don't call next() - stop processing this update
-        return;
+        this.logger.error(
+          `User binding failed for ${user.id} (@${user.username || 'no-username'}). ` +
+          `Will continue processing. Error: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        // Don't send messages during webhook processing - it can cause timeouts
+        // Continue processing even if user creation fails
       }
+
+      // Always continue to next middleware
+      await next();
     });
 
     // Authentication middleware - check if user is blocked
     this.bot.use(async (ctx, next) => {
       const userId = ctx.from?.id;
       if (!userId) {
+        await next();
         return;
       }
 
@@ -154,17 +154,19 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         // Check if user is authorized
         const isAuthorized = await this.commandService.isUserAuthorized(userId);
         if (!isAuthorized) {
-          this.logger.warn(`Blocked user ${userId} attempted to use bot`);
-          await ctx.reply(
-            '❌ You are blocked from using this bot.\n\n' +
-            'If you believe this is a mistake, please contact support.',
+          this.logger.warn(
+            `Blocked user ${userId} attempted to use bot. Silently ignoring.`,
           );
+          // Don't send messages during webhook processing - it can cause timeouts
+          // Blocked users get no response (silent rejection)
           return;
         }
 
         await next();
       } catch (error) {
-        this.logger.error(`Authorization check failed for ${userId}:`, error);
+        this.logger.error(
+          `Authorization check failed for ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
         // Continue processing - don't block users due to auth check errors
         await next();
       }

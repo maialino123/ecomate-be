@@ -32,12 +32,33 @@ export class TelegramBotController {
     }
 
     try {
+      // Validate request body
+      if (!req.body || typeof req.body !== 'object') {
+        this.logger.warn('Invalid webhook body received');
+        return res.status(HttpStatus.BAD_REQUEST).send({ error: 'Invalid request body' });
+      }
+
+      // Log incoming update for debugging
+      const update = req.body as Update;
+      const updateType = update.message ? 'message' : update.callback_query ? 'callback' : 'other';
+      this.logger.debug(`Processing webhook update: type=${updateType}, update_id=${update.update_id}`);
+
       // Process update with Telegram bot
       const bot = this.telegramBotService.getBot();
-      await bot.handleUpdate(req.body as Update);
+      await bot.handleUpdate(update);
+
+      this.logger.debug(`Webhook update ${update.update_id} processed successfully`);
       return res.status(HttpStatus.OK).send();
     } catch (error) {
-      this.logger.error('Error processing webhook:', error);
+      // Detailed error logging for debugging
+      const errorDetails = {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : typeof error,
+        stack: error instanceof Error ? error.stack : undefined,
+        updateId: (req.body as any)?.update_id,
+      };
+
+      this.logger.error('Error processing webhook:', errorDetails);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Internal server error' });
     }
   }
