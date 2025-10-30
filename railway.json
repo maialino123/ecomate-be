@@ -1,17 +1,19 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "npm ci && npx prisma generate && npm run build",
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.production",
+    "buildCommand": "echo 'Building with Docker...'",
     "watchPatterns": [
       "src/**",
-      "prisma/**"
+      "prisma/**",
+      "Dockerfile.production"
     ]
   },
   "deploy": {
     "numReplicas": 1,
     "startCommand": "node dist/main.js",
-    "healthcheckPath": "/ping",
+    "healthcheckPath": "/health/live",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
@@ -26,20 +28,92 @@
       "default": "3000"
     },
     "DATABASE_URL": {
-      "description": "PostgreSQL connection string",
+      "description": "PostgreSQL connection string (auto-provided by Railway PostgreSQL service)",
       "required": true
     },
     "REDIS_URL": {
-      "description": "Redis URL",
+      "description": "Redis connection string (auto-provided by Railway Redis service)",
       "required": true
     },
     "JWT_SECRET": {
-      "description": "JWT secret key (min 32 chars)",
+      "description": "JWT secret key - Generate: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
       "required": true
     },
     "JWT_REFRESH_SECRET": {
-      "description": "JWT refresh secret key (min 32 chars)",
+      "description": "JWT refresh secret key - Generate: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
       "required": true
+    },
+    "JWT_EXPIRES_IN": {
+      "description": "JWT token expiration time",
+      "default": "7d"
+    },
+    "JWT_REFRESH_EXPIRES_IN": {
+      "description": "JWT refresh token expiration time",
+      "default": "30d"
+    },
+    "S3_ENDPOINT": {
+      "description": "Cloudflare R2 endpoint - Format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com",
+      "required": true
+    },
+    "S3_REGION": {
+      "description": "S3 region for Cloudflare R2",
+      "default": "auto"
+    },
+    "S3_ACCESS_KEY_ID": {
+      "description": "Cloudflare R2 Access Key ID (from R2 dashboard)",
+      "required": true
+    },
+    "S3_SECRET_ACCESS_KEY": {
+      "description": "Cloudflare R2 Secret Access Key (from R2 dashboard)",
+      "required": true
+    },
+    "S3_BUCKET_NAME": {
+      "description": "Cloudflare R2 bucket name for video storage",
+      "default": "ecomate-videos"
+    },
+    "S3_PUBLIC_URL": {
+      "description": "Public URL for R2 bucket - Format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com/ecomate-videos",
+      "required": true
+    },
+    "CLOUDFLARE_WORKER_AI_URL": {
+      "description": "Cloudflare Worker AI URL for translation service",
+      "required": true
+    },
+    "CLOUDFLARE_ACCOUNT_ID": {
+      "description": "Cloudflare Account ID (optional, for internal use)",
+      "required": false
+    },
+    "TRANSLATION_CACHE_TTL": {
+      "description": "Translation cache TTL in seconds (30 days = 2592000)",
+      "default": "2592000"
+    },
+    "RESEND_API_KEY": {
+      "description": "Resend API key for email service (optional)",
+      "required": false
+    },
+    "EMAIL_FROM": {
+      "description": "Email sender address",
+      "default": "Ecomate <noreply@ecomatehome.com>"
+    },
+    "CORS_ORIGINS": {
+      "description": "Comma-separated list of allowed CORS origins",
+      "default": "*"
+    },
+    "TELEGRAM_BOT_TOKEN": {
+      "description": "Telegram bot token (optional)",
+      "required": false
+    },
+    "TELEGRAM_WEBHOOK_URL": {
+      "description": "Telegram webhook URL (optional)",
+      "required": false
+    },
+    "TELEGRAM_WEBHOOK_SECRET": {
+      "description": "Telegram webhook secret (optional)",
+      "required": false
+    },
+    "PYTHONUNBUFFERED": {
+      "description": "Python unbuffered output",
+      "default": "1"
     }
   }
 }

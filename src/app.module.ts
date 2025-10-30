@@ -14,6 +14,7 @@ import { Ingest1688Module } from './modules/ingest1688/ingest1688.module';
 import { TranslationModule } from './modules/translation/translation.module';
 import { Product1688Module } from './modules/product1688/product1688.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
+import { VideoDubbingModule } from './modules/video-dubbing/video-dubbing.module';
 import { LoggerModule } from './utils/logger/logger.module';
 import { RedisModule } from './utils/redis/redis.module';
 import { S3Module } from './utils/s3/s3.module';
@@ -71,6 +72,7 @@ import { HealthModule } from './health/health.module';
     TranslationModule,
     Product1688Module,
     TelegramBotModule,
+    VideoDubbingModule,
 
     // Utilities
     LoggerModule,
