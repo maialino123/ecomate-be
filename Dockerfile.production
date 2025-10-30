@@ -36,20 +36,24 @@ RUN apt-get update && apt-get install -y \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python AI packages
+# Install Python AI packages from PyPI
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir \
     # Video downloader
-    yt-dlp==2024.10.7 \
+    yt-dlp \
     # Speech recognition
-    openai-whisper==20231117 \
-    # Text-to-speech
-    piper-tts==1.2.0 \
+    openai-whisper \
+    # Text-to-speech (using phonemize for TTS)
+    piper-phonemize \
     # Audio processing (for Phase 2)
-    # demucs==4.0.1 \
+    # demucs \
     # Utilities
-    numpy \
-    torch --index-url https://download.pytorch.org/whl/cpu
+    numpy
+
+# Install PyTorch CPU-only version (smaller, no CUDA)
+RUN pip3 install --no-cache-dir \
+    torch \
+    --index-url https://download.pytorch.org/whl/cpu
 
 # Pre-download Whisper model to save runtime
 # Using 'tiny' model for Phase 1 (40MB, faster)
