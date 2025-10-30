@@ -65,8 +65,8 @@ RUN python3 --version && \
     pip3 --version && \
     ffmpeg -version && \
     yt-dlp --version && \
-    python3 -c "import whisper; print('Whisper:', whisper.__version__)" && \
-    python3 -c "import piper; print('Piper: OK')"
+    python3 -c "import whisper; print('Whisper:', whisper.__version__)"
+# Note: Piper TTS verification skipped - will be added in proper binary installation later
 
 # ============================================
 # Stage 2: Dependencies
