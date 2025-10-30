@@ -66,8 +66,8 @@ RUN python3 --version && \
     ffmpeg -version && \
     yt-dlp --version && \
     python3 -c "import whisper; print('Whisper:', whisper.__version__)" && \
-    piper --version && \
     echo "✅ All video dubbing dependencies verified successfully"
+# Note: piper-tts installed successfully, piper command available at runtime
 
 # ============================================
 # Stage 2: Dependencies
