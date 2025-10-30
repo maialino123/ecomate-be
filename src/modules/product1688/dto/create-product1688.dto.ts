@@ -92,4 +92,13 @@ export class CreateProduct1688Dto {
   @IsString()
   @IsOptional()
   supplierId1688?: string;
+
+  @ApiPropertyOptional({
+    description: '1688 original video URL (for video dubbing)',
+    example: 'https://cloud.video.taobao.com/play/u/xxx/p/1/e/6/t/1/xxx.mp4',
+  })
+  @IsString()
+  @IsOptional()
+  @IsUrl()
+  originalVideoUrl?: string;
 }

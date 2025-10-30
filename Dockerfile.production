@@ -1,0 +1,160 @@
+# ============================================
+# Ecomate Backend - Production Dockerfile
+# with Video Dubbing AI Dependencies
+# ============================================
+# This Dockerfile includes:
+# - Python 3.11 for AI tools
+# - FFmpeg for video processing
+# - yt-dlp for downloading videos
+# - OpenAI Whisper for speech recognition
+# - Piper TTS for Vietnamese text-to-speech
+# ============================================
+
+# Stage 1: Base with system dependencies
+FROM node:20-slim AS base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Python and pip
+    python3 \
+    python3-pip \
+    python3-venv \
+    # Video processing
+    ffmpeg \
+    # Download utilities
+    curl \
+    wget \
+    # Git for npm packages
+    git \
+    # Build tools for native modules
+    build-essential \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create Python virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python AI packages
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir \
+    # Video downloader
+    yt-dlp==2024.10.7 \
+    # Speech recognition
+    openai-whisper==20231117 \
+    # Text-to-speech
+    piper-tts==1.2.0 \
+    # Audio processing (for Phase 2)
+    # demucs==4.0.1 \
+    # Utilities
+    numpy \
+    torch --index-url https://download.pytorch.org/whl/cpu
+
+# Pre-download Whisper model to save runtime
+# Using 'tiny' model for Phase 1 (40MB, faster)
+# For Phase 2, change to 'medium' or 'large'
+RUN python3 -c "import whisper; whisper.load_model('tiny')"
+
+# Verify installations
+RUN python3 --version && \
+    pip3 --version && \
+    ffmpeg -version && \
+    yt-dlp --version && \
+    python3 -c "import whisper; print('Whisper:', whisper.__version__)" && \
+    python3 -c "import piper; print('Piper: OK')"
+
+# ============================================
+# Stage 2: Dependencies
+# ============================================
+FROM base AS deps
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
+
+# Install pnpm
+RUN npm install -g pnpm@latest
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod=false
+
+# ============================================
+# Stage 3: Builder
+# ============================================
+FROM base AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build application
+RUN npm run build
+
+# ============================================
+# Stage 4: Production Runtime
+# ============================================
+FROM base AS runner
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+ENV PYTHONUNBUFFERED=1
+
+# Create non-root user
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+
+# Create temp directories for video processing
+RUN mkdir -p /app/temp/videos \
+    /app/temp/audio \
+    /app/temp/tts \
+    /app/temp/encoded \
+    /app/temp/whisper \
+    /app/logs
+
+# Set permissions
+RUN chown -R nodejs:nodejs /app
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+
+# Copy Prisma files for runtime
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/health/live || exit 1
+
+# Start application
+CMD ["node", "dist/main.js"]
+
+# ============================================
+# Build command:
+# docker build -f Dockerfile.production -t ecomate-be:production .
+#
+# Run command:
+# docker run -p 3000:3000 \
+#   -e DATABASE_URL="postgresql://..." \
+#   -e REDIS_URL="redis://..." \
+#   -e S3_ENDPOINT="..." \
+#   ecomate-be:production
+# ============================================
