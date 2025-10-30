@@ -77,14 +77,10 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-COPY pnpm-lock.yaml* ./
+COPY package*.json package-lock.json ./
 
-# Install pnpm
-RUN npm install -g pnpm@latest
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile --prod=false
+# Install dependencies with npm (faster, built into base image)
+RUN npm ci --include=dev
 
 # ============================================
 # Stage 3: Builder
