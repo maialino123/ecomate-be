@@ -43,8 +43,8 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     yt-dlp \
     # Speech recognition
     openai-whisper \
-    # Text-to-speech (using phonemize for TTS)
-    piper-phonemize \
+    # Text-to-speech (full TTS engine with CLI)
+    piper-tts \
     # Audio processing (for Phase 2)
     # demucs \
     # Utilities
@@ -65,8 +65,9 @@ RUN python3 --version && \
     pip3 --version && \
     ffmpeg -version && \
     yt-dlp --version && \
-    python3 -c "import whisper; print('Whisper:', whisper.__version__)"
-# Note: Piper TTS verification skipped - will be added in proper binary installation later
+    python3 -c "import whisper; print('Whisper:', whisper.__version__)" && \
+    piper --version && \
+    echo "✅ All video dubbing dependencies verified successfully"
 
 # ============================================
 # Stage 2: Dependencies
